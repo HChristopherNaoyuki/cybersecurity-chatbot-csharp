@@ -30,7 +30,7 @@ namespace cybersecurity_chatbot_csharp
             try
             {
                 // Load and play the WAV file
-                SoundPlayer player = new SoundPlayer("welcome.wav");
+                SoundPlayer player = new SoundPlayer("E:\\Projects\\Source Code\\Visual Studio 2022\\cybersecurity-chatbot-csharp\\cybersecurity-chatbot-csharp\\welcome.wav");
                 player.PlaySync(); // Play synchronously
             }
             catch (Exception ex)
