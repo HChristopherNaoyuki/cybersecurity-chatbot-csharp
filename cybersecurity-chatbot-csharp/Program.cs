@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Media; // For playing audio
-using System.Threading; // For simulating typing effect
+using System.Media;
+using System.Threading;
 
 namespace cybersecurity_chatbot_csharp
 {
@@ -46,12 +46,14 @@ namespace cybersecurity_chatbot_csharp
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@"
-  _____           _      _        _____  _____  _____  _____  _____ 
- |  __ \         | |    | |      / ____|/ ____|/ ____|/ ____|/ ____|
- | |__) |__ _ ___| | __ | |__   | (___ | |    | |    | |    | (___  
- |  ___// _` / __| |/ / | '_ \   \___ \| |    | |    | |     \___ \ 
- | |  | (_| \__ \   <  | |_) |  ____) | |____| |____| |____ ____) |
- |_|   \__,_|___/_|\_\ |_.__/  |_____/ \_____|\_____|\_____|_____/ 
+ _____         _                                                _  _            _____  _             _    _             _   
+/  __ \       | |                                              (_)| |          /  __ \| |           | |  | |           | |  
+| /  \/ _   _ | |__    ___  _ __  ___   ___   ___  _   _  _ __  _ | |_  _   _  | /  \/| |__    __ _ | |_ | |__    ___  | |_ 
+| |    | | | || '_ \  / _ \| '__|/ __| / _ \ / __|| | | || '__|| || __|| | | | | |    | '_ \  / _` || __|| '_ \  / _ \ | __|
+| \__/\| |_| || |_) ||  __/| |   \__ \|  __/| (__ | |_| || |   | || |_ | |_| | | \__/\| | | || (_| || |_ | |_) || (_) || |_ 
+ \____/ \__, ||_.__/  \___||_|   |___/ \___| \___| \__,_||_|   |_| \__| \__, |  \____/|_| |_| \__,_| \__||_.__/  \___/  \__|
+         __/ |                                                           __/ |                                              
+        |___/                                                           |___/                                               
             ");
             Console.ResetColor();
         }
@@ -85,11 +87,22 @@ namespace cybersecurity_chatbot_csharp
             Console.ResetColor();
         }
 
+        // Method to simulate typing effect
+        static void TypeText(string text, int delay = 50)
+        {
+            foreach (char c in text)
+            {
+                Console.Write(c);
+                Thread.Sleep(delay); // Simulate typing delay
+            }
+            Console.WriteLine(); // Move to the next line after typing
+        }
+
         // Method to start the chat
         static void StartChat(string userName)
         {
             Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine("You can ask me about:\n- Password safety\n- Phishing\n- Safe browsing\n");
+            TypeText("You can ask me about:\n- Password safety\n- Phishing\n- Safe browsing\n", 30);
             Console.ResetColor();
 
             while (true)
@@ -103,7 +116,7 @@ namespace cybersecurity_chatbot_csharp
                 if (string.IsNullOrWhiteSpace(userInput))
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("I didn’t quite understand that. Could you rephrase?");
+                    TypeText("I didn’t quite understand that. Could you rephrase?", 30);
                     Console.ResetColor();
                     continue;
                 }
@@ -111,7 +124,7 @@ namespace cybersecurity_chatbot_csharp
                 if (userInput == "exit")
                 {
                     Console.ForegroundColor = ConsoleColor.Blue;
-                    Console.WriteLine("Goodbye! Stay safe online!");
+                    TypeText("Goodbye! Stay safe online!", 30);
                     Console.ResetColor();
                     break;
                 }
@@ -119,27 +132,45 @@ namespace cybersecurity_chatbot_csharp
                 // Task 4: Basic Response System
                 switch (userInput)
                 {
+                    case "how are you?":
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        TypeText("I'm just a bot, but I'm here to help you stay safe online!", 30);
+                        Console.ResetColor();
+                        break;
+
+                    case "what's your purpose?":
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        TypeText("My purpose is to educate you about cybersecurity and help you stay safe online.", 30);
+                        Console.ResetColor();
+                        break;
+
+                    case "what can i ask you about?":
+                        Console.ForegroundColor = ConsoleColor.Cyan;
+                        TypeText("You can ask me about:\n- Password safety\n- Phishing\n- Safe browsing", 30);
+                        Console.ResetColor();
+                        break;
+
                     case "password":
                         Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine("Use strong, unique passwords for each account. Avoid using personal details.");
+                        TypeText("Use strong, unique passwords for each account. Avoid using personal details.", 30);
                         Console.ResetColor();
                         break;
 
                     case "phishing":
                         Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine("Be cautious of emails asking for personal information. Scammers often disguise themselves as trusted organizations.");
+                        TypeText("Be cautious of emails asking for personal information. Scammers often disguise themselves as trusted organizations.", 30);
                         Console.ResetColor();
                         break;
 
                     case "safe browsing":
                         Console.ForegroundColor = ConsoleColor.Cyan;
-                        Console.WriteLine("Always check for 'https://' in the URL and avoid clicking on suspicious links.");
+                        TypeText("Always check for 'https://' in the URL and avoid clicking on suspicious links.", 30);
                         Console.ResetColor();
                         break;
 
                     default:
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("I didn’t quite understand that. Could you rephrase?");
+                        TypeText("I didn’t quite understand that. Could you rephrase?", 30);
                         Console.ResetColor();
                         break;
                 }
