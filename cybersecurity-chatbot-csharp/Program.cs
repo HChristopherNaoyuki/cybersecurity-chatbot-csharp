@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Media;
+using System.IO;
 using System.Threading;
 
 namespace cybersecurity_chatbot_csharp
@@ -29,9 +30,29 @@ namespace cybersecurity_chatbot_csharp
         {
             try
             {
-                // Load and play the WAV file
-                SoundPlayer player = new SoundPlayer("Audio\\welcome.wav");
-                player.PlaySync(); // Play synchronously
+                // Get the base directory of the application
+                var basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+                // Combine the base directory with the relative path to the audio file
+                string relativePath = Path.Combine("Audio", "welcome.wav");
+
+                // Get the absolute path by resolving the relative path
+                string audioPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
+
+                // Check if the file exists at the resolved path
+                if (File.Exists(audioPath))
+                {
+                    // Load and play the WAV file
+                    SoundPlayer player = new SoundPlayer(audioPath);
+                    player.Load(); // Ensure the file is loaded before playing
+                    player.PlaySync(); // Play synchronously
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Audio file not found at: " + audioPath);
+                    Console.ResetColor();
+                }
             }
             catch (Exception ex)
             {
