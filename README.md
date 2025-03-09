@@ -21,14 +21,14 @@ This project is a **Cybersecurity Awareness Chatbot** developed in **C#**. The c
 Before running the chatbot, ensure you have the following installed:
 - **.NET SDK** (version 6.0 or later)
 - **Visual Studio** (optional, for easier development)
-- A `.wav` file named `welcome.wav` for the voice greeting (place it in the project directory).
+- A `.wav` file named `welcome.wav` for the voice greeting (place it in the `Audio` folder within the project directory).
 
 ---
 
 ## Setup Instructions
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/HChristopherNaoyuki/cybersecurity-chatbot-csharp.git
+   git clone https://github.com/your-username/cybersecurity-chatbot-csharp.git
    cd cybersecurity-chatbot-csharp
    ```
 
@@ -49,6 +49,38 @@ Before running the chatbot, ensure you have the following installed:
 
 ---
 
+## Folder Structure
+```
+cybersecurity-chatbot-csharp/
+├── Audio/
+│   └── welcome.wav          # Voice greeting audio file
+├── Program.cs               # Main program file
+├── README.md                # Project documentation
+├── .github/workflows/       # GitHub Actions workflow
+└── cybersecurity_chatbot_csharp.csproj  # Project configuration file
+```
+
+---
+
+## Usage Examples
+### General Questions
+- **User**: "How are you?"
+  - **Chatbot**: "I'm just a bot, but I'm here to help you stay safe online!"
+- **User**: "What's your purpose?"
+  - **Chatbot**: "My purpose is to educate you about cybersecurity and help you stay safe online."
+- **User**: "What can I ask you about?"
+  - **Chatbot**: "You can ask me about:\n- Passwords\n- Phishing\n- Safe browsing\n- General questions"
+
+### Cybersecurity Topics
+- **User**: "How do I create a strong password?"
+  - **Chatbot**: "A strong password should be at least 12 characters long, include a mix of letters, numbers, and symbols, and avoid common words or phrases."
+- **User**: "What is phishing?"
+  - **Chatbot**: "Phishing is a type of cyberattack where attackers trick you into revealing sensitive information, such as passwords or credit card numbers, by pretending to be a trusted entity."
+- **User**: "How can I browse the internet safely?"
+  - **Chatbot**: "Use a secure browser, enable HTTPS, avoid suspicious websites, and keep your software up to date."
+
+---
+
 ## GitHub Version Control
 ### Commit Messages
 Ensure you make **at least three meaningful commits** with descriptive messages. Example commit messages:
@@ -66,38 +98,6 @@ To set up GitHub Actions:
 1. Navigate to the **Actions** tab in your GitHub repository.
 2. Choose a preconfigured workflow or set up a custom one.
 3. Save the workflow file in the `.github/workflows` folder.
-
----
-
-## Usage Examples
-### General Questions
-- **User**: "How are you?"
-  - **Chatbot**: "I'm just a bot, but I'm here to help you stay safe online!"
-- **User**: "What's your purpose?"
-  - **Chatbot**: "My purpose is to educate you about cybersecurity and help you stay safe online."
-- **User**: "What can I ask you about?"
-  - **Chatbot**: "You can ask me about:\n- Password safety\n- Phishing\n- Safe browsing."
-
-### Cybersecurity Topics
-- **User**: "password"
-  - **Chatbot**: "Use strong, unique passwords for each account. Avoid using personal details."
-- **User**: "phishing"
-  - **Chatbot**: "Be cautious of emails asking for personal information. Scammers often disguise themselves as trusted organizations."
-- **User**: "safe browsing"
-  - **Chatbot**: "Always check for 'https://' in the URL and avoid clicking on suspicious links."
-
----
-
-## Project Structure
-```
-cybersecurity-chatbot-csharp/
-│
-├── Program.cs              # Main program file
-├── welcome.wav             # Voice greeting audio file
-├── README.md               # Project documentation
-├── .github/workflows/      # GitHub Actions workflow
-└── cybersecurity_chatbot_csharp.csproj  # Project configuration file
-```
 
 ---
 
