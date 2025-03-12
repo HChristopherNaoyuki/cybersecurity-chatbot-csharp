@@ -1,113 +1,119 @@
 # Cybersecurity Awareness Chatbot
 
 ## Overview
-This project is a **Cybersecurity Awareness Chatbot** developed in **C#**. The chatbot is designed to educate users about cybersecurity topics such as password safety, phishing, and safe browsing. It provides a conversational interface where users can ask questions and receive informative responses. The chatbot also includes features like a **voice greeting**, **ASCII art**, and a **typing effect** to simulate a natural conversation.
+This project is a **Cybersecurity Awareness Chatbot** designed to educate users about online safety practices. The chatbot is a console-based application that simulates real-life scenarios where users might encounter cyber threats, such as phishing, password safety, and safe browsing. It provides guidance on how to avoid common traps and stay safe online.
+
+The chatbot is developed in **C#** and includes features such as:
+- Voice greeting
+- ASCII art display
+- Personalized user interaction
+- Basic response system for cybersecurity topics
+- Input validation
+- Enhanced console UI with color formatting and typing effects
+
+This project is part of a larger assignment for the **Programming 2A** module (PROG6221) and is divided into three parts. This README covers **Part 1** of the project.
 
 ---
 
 ## Features
-1. **Voice Greeting**: Plays a welcome message when the chatbot starts.
-2. **ASCII Art**: Displays a cybersecurity-themed logo when the chatbot launches.
-3. **User Interaction**: Asks for the user's name and personalizes responses.
-4. **Basic Response System**: Responds to general questions and specific cybersecurity topics.
-5. **Input Validation**: Handles invalid or unexpected inputs gracefully.
-6. **Typing Effect**: Simulates a typing effect for chatbot responses to create a conversational feel.
-7. **GitHub Version Control**: The project is version-controlled using Git, with meaningful commit messages.
-8. **Continuous Integration (CI)**: GitHub Actions is set up to check for syntax errors and successful builds.
+- **Voice Greeting**: Plays a welcome message when the chatbot starts.
+- **ASCII Art**: Displays a cybersecurity-themed logo or image.
+- **User Interaction**: Asks for the user's name and personalizes responses.
+- **Basic Response System**: Responds to user queries about cybersecurity topics like passwords, phishing, and safe browsing.
+- **Input Validation**: Handles invalid or unexpected inputs gracefully.
+- **Enhanced Console UI**: Uses colored text, borders, and typing effects to create a visually appealing interface.
 
 ---
 
 ## Prerequisites
 Before running the chatbot, ensure you have the following installed:
-- **.NET SDK** (version 6.0 or later)
-- **Visual Studio** (optional, for easier development)
-- A `.wav` file named `welcome.wav` for the voice greeting (place it in the `Audio` folder within the project directory).
+- **.NET SDK** (version 6.0 or higher)
+- **Visual Studio** (or any C# IDE)
+- **Audio File**: A `.wav` file for the voice greeting (place it in the `Audio` folder).
 
 ---
 
 ## Setup Instructions
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/your-username/cybersecurity-chatbot-csharp.git
-   cd cybersecurity-chatbot-csharp
-   ```
 
-2. **Build the Project**:
-   ```bash
-   dotnet build
-   ```
+### 1. Clone the Repository
+Clone this repository to your local machine using the following command:
+```bash
+git clone https://github.com/your-username/cybersecurity-chatbot-csharp.git
+```
 
-3. **Run the Chatbot**:
-   ```bash
-   dotnet run
-   ```
+### 2. Navigate to the Project Directory
+Open the project in your preferred IDE (e.g., Visual Studio) or navigate to the project directory in the terminal:
+```bash
+cd cybersecurity-chatbot-csharp
+```
 
-4. **Interact with the Chatbot**:
-   - Enter your name when prompted.
-   - Ask questions about cybersecurity topics like password safety, phishing, or safe browsing.
-   - Type `exit` to quit the chatbot.
+### 3. Add the Audio File
+- Create a folder named `Audio` in the project directory.
+- Place the `welcome.wav` file inside the `Audio` folder. This file will be used for the voice greeting.
+
+### 4. Build and Run the Project
+- Open the project in Visual Studio and click **Build > Build Solution**.
+- Run the project by pressing **F5** or clicking **Debug > Start Debugging**.
+- Alternatively, you can run the project from the terminal using the following command:
+  ```bash
+  dotnet run
+  ```
 
 ---
 
-## Folder Structure
+## Usage
+1. **Launch the Chatbot**:
+   - When the chatbot starts, it will play a voice greeting and display ASCII art.
+   - You will be prompted to enter your name.
+
+2. **Interact with the Chatbot**:
+   - The chatbot will welcome you and start a conversation.
+   - You can ask questions about cybersecurity topics such as:
+     - "How do I create a strong password?"
+     - "What is phishing?"
+     - "How can I stay safe on public Wi-Fi?"
+   - Type `exit` to end the chat.
+
+3. **Example Interaction**:
+   ```
+   Enter your name: John
+   =======================================================================
+   Hello, John! Welcome to the Cybersecurity Awareness Bot.
+   I'm here to help you stay safe online.
+   =======================================================================
+   John: What is phishing?
+   ChatBot: Phishing is when attackers trick you into revealing sensitive information via fake emails or websites.
+   John: exit
+   ChatBot: Goodbye! Stay safe online!
+   ```
+
+---
+
+## Project Structure
+The project is organized as follows:
 ```
 cybersecurity-chatbot-csharp/
-├── Audio/
-│   └── welcome.wav          # Voice greeting audio file
-├── Program.cs               # Main program file
-├── README.md                # Project documentation
-├── .github/workflows/       # GitHub Actions workflow
-└── cybersecurity_chatbot_csharp.csproj  # Project configuration file
+│
+├── Audio/                  # Folder containing the voice greeting audio file
+│   └── welcome.wav         # Audio file for the voice greeting
+│
+├── Program.cs              # Main C# file containing the chatbot logic
+├── README.md               # This file
+└── cybersecurity-chatbot-csharp.csproj  # Project configuration file
 ```
 
 ---
 
-## Usage Examples
-### General Questions
-- **User**: "How are you?"
-  - **Chatbot**: "I'm just a bot, but I'm here to help you stay safe online!"
-- **User**: "What's your purpose?"
-  - **Chatbot**: "My purpose is to educate you about cybersecurity and help you stay safe online."
-- **User**: "What can I ask you about?"
-  - **Chatbot**: "You can ask me about:\n- Passwords\n- Phishing\n- Safe browsing\n- General questions"
-
-### Cybersecurity Topics
-- **User**: "How do I create a strong password?"
-  - **Chatbot**: "A strong password should be at least 12 characters long, include a mix of letters, numbers, and symbols, and avoid common words or phrases."
-- **User**: "What is phishing?"
-  - **Chatbot**: "Phishing is a type of cyberattack where attackers trick you into revealing sensitive information, such as passwords or credit card numbers, by pretending to be a trusted entity."
-- **User**: "How can I browse the internet safely?"
-  - **Chatbot**: "Use a secure browser, enable HTTPS, avoid suspicious websites, and keep your software up to date."
+## GitHub and Continuous Integration (CI)
+- **GitHub Repository**: Ensure your project is hosted on GitHub with at least **3 meaningful commits**.
+- **Continuous Integration (CI)**: Set up GitHub Actions to automatically check for syntax errors and code formatting. A sample workflow file (`.github/workflows/ci.yml`) is provided in the repository.
 
 ---
 
-## GitHub Version Control
-### Commit Messages
-Ensure you make **at least three meaningful commits** with descriptive messages. Example commit messages:
-- `Initial commit: Set up project structure and main files.`
-- `Added voice greeting and ASCII art.`
-- `Implemented basic chatbot responses and input validation.`
-
-### Continuous Integration (CI)
-GitHub Actions is set up to run a CI workflow. The workflow checks for:
-- Syntax errors.
-- Code formatting.
-- Successful builds.
-
-To set up GitHub Actions:
-1. Navigate to the **Actions** tab in your GitHub repository.
-2. Choose a preconfigured workflow or set up a custom one.
-3. Save the workflow file in the `.github/workflows` folder.
-
----
-
-## Rubric Compliance
-This project meets the following rubric criteria for **Question 1**:
-- **Voice Greeting and Image Display**: Includes a voice greeting and ASCII art.
-- **Text-Based Greeting and User Interaction**: Personalizes responses using the user's name.
-- **Basic Response System**: Responds to general questions and specific cybersecurity topics.
-- **Input Validation**: Handles invalid inputs gracefully.
-- **Enhanced Console UI**: Uses colored text, ASCII art, and typing effects for a better user experience.
-- **GitHub Version Control and CI**: Includes meaningful commits and a CI workflow.
+## Future Enhancements
+This project will be expanded in **Part 2** and **Part 3** to include:
+- Dynamic responses and sentiment detection
+- Memory feature to recall user details
+- Advanced GUI features (task assistant, cybersecurity quiz, and NLP simulation)
 
 ---
