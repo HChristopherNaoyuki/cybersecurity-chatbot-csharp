@@ -2,7 +2,6 @@
 using System.Media;
 using System.IO;
 using System.Threading;
-using System.Linq;
 using System.Collections.Generic;
 
 namespace cybersecurity_chatbot_csharp
@@ -182,6 +181,11 @@ namespace cybersecurity_chatbot_csharp
                 // Define keywords and responses for cybersecurity topics
                 Dictionary<string, string> responses = new Dictionary<string, string>
                 {
+                    // General questions
+                    { "how are you", "I'm doing great, thanks for asking!" },
+                    { "purpose", "My purpose is to keep you safe online." },
+
+                    // Cybersecurity topics
                     { "password", "A strong password should be at least 12 characters long, with a mix of letters, numbers, and symbols." },
                     { "2fa", "Two-factor authentication adds an extra layer of security. Always enable it when possible." },
                     { "phishing", "Phishing is when attackers trick you into revealing sensitive information via fake emails or websites." },
