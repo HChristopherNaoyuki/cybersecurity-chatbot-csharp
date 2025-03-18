@@ -50,7 +50,7 @@ namespace cybersecurity_chatbot_csharp
                 {
                     // Display an error message if the audio file is not found
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Audio file not found at: " + audioPath);
+                    Console.WriteLine($"Audio file not found at: {audioPath}");
                     Console.ResetColor();
                 }
             }
@@ -58,7 +58,7 @@ namespace cybersecurity_chatbot_csharp
             {
                 // Handle any errors that occur while playing the voice greeting
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error playing voice greeting: " + ex.Message);
+                Console.WriteLine($"Error playing voice greeting: {ex.Message}");
                 Console.ResetColor();
             }
         }
@@ -68,8 +68,8 @@ namespace cybersecurity_chatbot_csharp
         {
             try
             {
-                // Set the console text color to Cyan for the ASCII art
-                Console.ForegroundColor = ConsoleColor.Cyan;
+                // Set the console text color to Dark Green for the ASCII art
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
 
                 // Display the cybersecurity-themed ASCII art
                 Console.WriteLine(@"
@@ -90,7 +90,7 @@ namespace cybersecurity_chatbot_csharp
             {
                 // Handle any errors that occur while displaying the ASCII art
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error displaying ASCII art: " + ex.Message);
+                Console.WriteLine($"Error displaying ASCII art: {ex.Message}");
                 Console.ResetColor();
             }
         }
@@ -124,7 +124,7 @@ namespace cybersecurity_chatbot_csharp
             {
                 // Handle any errors that occur while getting the user's name
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error getting user name: " + ex.Message);
+                Console.WriteLine($"Error getting user name: {ex.Message}");
                 Console.ResetColor();
                 return "User"; // Default name if an error occurs
             }
@@ -135,8 +135,8 @@ namespace cybersecurity_chatbot_csharp
         {
             try
             {
-                // Set the console text color to Green for the welcome message
-                Console.ForegroundColor = ConsoleColor.Green;
+                // Set the console text color to Yellow for the welcome message
+                Console.ForegroundColor = ConsoleColor.Yellow;
 
                 // Display a welcome message with the user's name
                 Console.WriteLine("=======================================================================");
@@ -151,7 +151,7 @@ namespace cybersecurity_chatbot_csharp
             {
                 // Handle any errors that occur while displaying the welcome message
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error displaying welcome message: " + ex.Message);
+                Console.WriteLine($"Error displaying welcome message: {ex.Message}");
                 Console.ResetColor();
             }
         }
@@ -216,7 +216,7 @@ namespace cybersecurity_chatbot_csharp
                     // Input validation: Check for empty input
                     if (string.IsNullOrWhiteSpace(userInput))
                     {
-                        Console.ForegroundColor = ConsoleColor.Cyan; // Chatbot responses in Cyan
+                        Console.ForegroundColor = ConsoleColor.Red; // Error message in Red
                         TypeText("ChatBot: I did not quite understand that. Could you rephrase?", 30);
                         Console.ResetColor();
                         continue; // Skip to the next iteration of the loop
@@ -225,7 +225,7 @@ namespace cybersecurity_chatbot_csharp
                     // Check if the user wants to exit the chat
                     if (userInput == "exit")
                     {
-                        Console.ForegroundColor = ConsoleColor.Cyan; // Chatbot responses in Cyan
+                        Console.ForegroundColor = ConsoleColor.Magenta; // Chatbot responses in Pink
                         TypeText("ChatBot: Goodbye! Stay safe online!", 30);
                         Console.ResetColor();
                         break; // Exit the loop and end the chat
@@ -238,7 +238,7 @@ namespace cybersecurity_chatbot_csharp
                         if (userInput.Contains(keyword))
                         {
                             // Display the corresponding response for the keyword
-                            Console.ForegroundColor = ConsoleColor.Cyan; // Chatbot responses in Cyan
+                            Console.ForegroundColor = ConsoleColor.Magenta; // Chatbot responses in Pink
                             TypeText($"ChatBot: {responses[keyword]}", 30);
                             Console.ResetColor();
                             responseFound = true;
@@ -249,7 +249,7 @@ namespace cybersecurity_chatbot_csharp
                     // If no keyword was found, ask the user to rephrase
                     if (!responseFound)
                     {
-                        Console.ForegroundColor = ConsoleColor.Cyan; // Chatbot responses in Cyan
+                        Console.ForegroundColor = ConsoleColor.Red; // Error message in Red
                         TypeText("ChatBot: I did not quite understand that. Could you rephrase?", 30);
                         Console.ResetColor();
                     }
@@ -259,7 +259,7 @@ namespace cybersecurity_chatbot_csharp
             {
                 // Handle any errors that occur during the chat
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error in chatbot: " + ex.Message);
+                Console.WriteLine($"Error in chatbot: {ex.Message}");
                 Console.ResetColor();
             }
         }
