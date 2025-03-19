@@ -112,7 +112,3 @@ cybersecurity-chatbot-csharp/
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ---
-
-Enjoy using the Cybersecurity Awareness Chatbot! Stay safe online! 🛡️
-
----
