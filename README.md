@@ -97,6 +97,7 @@ cybersecurity-chatbot-csharp/
 │
 ├── Program.cs              # Main C# file containing the chatbot logic
 ├── README.md               # This file
+├── LICENSE                 # MIT License
 └── cybersecurity-chatbot-csharp.csproj  # Project configuration file
 ```
 
