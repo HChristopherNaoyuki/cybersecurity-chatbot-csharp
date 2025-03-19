@@ -11,8 +11,6 @@ The chatbot is developed in **C#** and includes features such as:
 - Input validation
 - Enhanced console UI with color formatting and typing effects
 
-This project is part of a larger assignment for the **Programming 2A** module (PROG6221) and is divided into three parts. This README covers **Part 1** of the project.
-
 ---
 
 ## Features
@@ -38,7 +36,7 @@ Before running the chatbot, ensure you have the following installed:
 ### 1. Clone the Repository
 Clone this repository to your local machine using the following command:
 ```bash
-git clone https://github.com/HChristopherNaoyuki/cybersecurity-chatbot-csharp.git
+git clone hhttps://github.com/HChristopherNaoyuki/cybersecurity-chatbot-csharp.git
 ```
 
 ### 2. Navigate to the Project Directory
@@ -110,10 +108,11 @@ cybersecurity-chatbot-csharp/
 
 ---
 
-## Future Enhancements
-This project will be expanded in **Part 2** and **Part 3** to include:
-- Dynamic responses and sentiment detection
-- Memory feature to recall user details
-- Advanced GUI features (task assistant, cybersecurity quiz, and NLP simulation)
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+---
+
+Enjoy using the Cybersecurity Awareness Chatbot! Stay safe online! 🛡️
 
 ---
