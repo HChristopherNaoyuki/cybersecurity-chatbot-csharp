@@ -120,7 +120,7 @@ namespace cybersecurity_chatbot_csharp
             try
             {
                 // Prompt the user to enter their name
-                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
                 Console.Write("Enter your name: ");
                 Console.ResetColor();
 
@@ -154,8 +154,8 @@ namespace cybersecurity_chatbot_csharp
         {
             try
             {
-                // Set the console text color to Yellow for the welcome message
-                Console.ForegroundColor = ConsoleColor.Yellow;
+                // Set the console text color to Dark Cyan for the welcome message
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
 
                 // Display a welcome message with the user's name
                 Console.WriteLine("=======================================================================");
@@ -216,8 +216,8 @@ namespace cybersecurity_chatbot_csharp
                     { "https", "HTTPS websites encrypt data between your browser and the server, keeping it safe from attackers." }
                 };
 
-                // Display exit prompt in Yellow
-                Console.ForegroundColor = ConsoleColor.Yellow;
+                // Display exit prompt in Cyan
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 TypeText("Type 'exit' to quit the chat.", 30);
                 Console.ResetColor();
 
@@ -225,7 +225,7 @@ namespace cybersecurity_chatbot_csharp
                 while (true)
                 {
                     // Prompt the user for input
-                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
                     Console.Write($"{userName}: ");
                     Console.ResetColor();
 
@@ -244,7 +244,7 @@ namespace cybersecurity_chatbot_csharp
                     // Check if the user wants to exit the chat
                     if (userInput == "exit")
                     {
-                        Console.ForegroundColor = ConsoleColor.Magenta; // Chatbot responses in Pink
+                        Console.ForegroundColor = ConsoleColor.Magenta; // Chatbot responses in Magenta
                         TypeText("ChatBot: Goodbye! Stay safe online!", 30);
                         Console.ResetColor();
                         break; // Exit the loop and end the chat
@@ -257,8 +257,10 @@ namespace cybersecurity_chatbot_csharp
                         if (userInput.Contains(keyword))
                         {
                             // Display the corresponding response for the keyword
-                            Console.ForegroundColor = ConsoleColor.Magenta; // Chatbot responses in Pink
-                            TypeText($"ChatBot: {responses[keyword]}", 30);
+                            Console.ForegroundColor = ConsoleColor.DarkCyan; // Chatbot name in Dark Cyan
+                            Console.Write("ChatBot: ");
+                            Console.ForegroundColor = ConsoleColor.Magenta; // Chatbot message in Magenta
+                            TypeText(responses[keyword], 30);
                             Console.ResetColor();
                             responseFound = true;
                             break; // Exit the loop after finding a matching keyword
@@ -268,8 +270,10 @@ namespace cybersecurity_chatbot_csharp
                     // If no keyword was found, ask the user to rephrase
                     if (!responseFound)
                     {
+                        Console.ForegroundColor = ConsoleColor.DarkCyan; // Chatbot name in Dark Cyan
+                        Console.Write("ChatBot: ");
                         Console.ForegroundColor = ConsoleColor.Red; // Error message in Red
-                        TypeText("ChatBot: I did not quite understand that. Could you rephrase?", 30);
+                        TypeText("I did not quite understand that. Could you rephrase?", 30);
                         Console.ResetColor();
                     }
                 }
