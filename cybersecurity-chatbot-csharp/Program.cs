@@ -169,87 +169,53 @@ namespace cybersecurity_chatbot_csharp
 
                     // Password Security
                     { "password",
-                        @"- Use at least 12 characters (longer is better).
-                        - Combine uppercase, lowercase, numbers and special characters.
-                        - Avoid dictionary words or personal information.
-                        - Use unique passwords for each account.
-                        - Consider a password manager to generate/store passwords securely."
+                    "Use at least 12 characters (longer is better). Combine uppercase, lowercase, numbers and special characters. Avoid dictionary words or personal information. Use unique passwords for each account. Consider a password manager to generate/store passwords securely."
                     },
 
                     // Two-Factor Authentication
                     { "2fa",
-                        @"- Adds an extra security layer beyond just passwords.
-                        - Types include SMS codes, authenticator apps, and hardware tokens.
-                        - Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS.
-                        - Backup codes should be stored securely.
-                        - Required for all financial and sensitive accounts."
+                    "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts."
                     },
                     { "authentication",
-                        @"- Adds an extra security layer beyond just passwords.
-                        - Types include SMS codes, authenticator apps, and hardware tokens.
-                        - Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS.
-                        - Backup codes should be stored securely.
-                        - Required for all financial and sensitive accounts."
+                    "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts."
                     },
                     { "two factor",
-                        @"- Adds an extra security layer beyond just passwords.
-                        - Types include SMS codes, authenticator apps, and hardware tokens.
-                        - Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS.
-                        - Backup codes should be stored securely.
-                        - Required for all financial and sensitive accounts."
+                    "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts."
                     },
 
                     // Phishing Awareness
                     { "phishing",
-                        @"- Never click links or download attachments from unexpected emails.
-                        - Check sender addresses carefully for slight misspellings.
-                        - Hover over links to preview the actual URL before clicking.
-                        - Legitimate organizations won't ask for sensitive info via email.
-                        - Report suspicious emails to your IT department or email provider."
+                    "Never click links or download attachments from unexpected emails. Check sender addresses carefully for slight misspellings. Hover over links to preview the actual URL before clicking. Legitimate organizations won't ask for sensitive info via email. Report suspicious emails to your IT department or email provider."
                     },
                     { "spear phishing", "Spear phishing targets specific individuals with personalized messages. Always verify unusual requests through another channel." },
                     
                     // VPN Usage
                     { "vpn",
-                        @"- Encrypts all internet traffic between your device and the VPN server.
-                        - Essential when using public Wi-Fi networks.
-                        - Choose a reputable VPN provider with a no-logs policy.
-                        - Can help bypass geo-restrictions but choose servers carefully.
-                        - Doesn't make you completely anonymous - other tracking methods exist."
+                    "Encrypts all internet traffic between your device and the VPN server. Essential when using public Wi-Fi networks. Choose a reputable VPN provider with a no-logs policy. Can help bypass geo-restrictions but choose servers carefully. Doesn't make you completely anonymous - other tracking methods exist."
                     },
 
                     // Public Wi-Fi Safety
                     { "public wi-fi",
-                        @"- Assume all public Wi-Fi networks are potentially insecure.
-                        - Never access banking or sensitive accounts without VPN.
-                        - Disable file sharing and enable firewall.
-                        - Use cellular data instead when possible for sensitive activities.
-                        - Forget the network after use to prevent automatic reconnection."
+                    "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection."
+                    },
+                    { "wi-fi",
+                    "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection."
                     },
                     { "wifi",
-                        @"- Assume all public Wi-Fi networks are potentially insecure.
-                        - Never access banking or sensitive accounts without VPN.
-                        - Disable file sharing and enable firewall.
-                        - Use cellular data instead when possible for sensitive activities.
-                        - Forget the network after use to prevent automatic reconnection."
+                    "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection."
                     },
 
                     // HTTPS Security
                     { "https",
-                        @"- Look for padlock icon in browser address bar.
-                        - Indicates encrypted connection between browser and website.
-                        - Doesn't guarantee the website itself is legitimate.
-                        - Important for all login pages and form submissions.
-                        - Consider HTTPS Everywhere browser extension for forced encryption."
+                    "Look for padlock icon in browser address bar. Indicates encrypted connection between browser and website. Doesn't guarantee the website itself is legitimate. Important for all login pages and form submissions. Consider HTTPS Everywhere browser extension for forced encryption."
                     },
 
                     // Email Security
                     { "email",
-                        @"- Enable spam filters at maximum setting.
-                        - Be wary of urgent requests for information or money transfers.
-                        - Don't open unexpected attachments (even from known contacts).
-                        - Verify unusual requests via another communication channel.
-                        - Regularly review and clean up old emails containing sensitive information."
+                    "Enable spam filters at maximum setting. Be wary of urgent requests for information or money transfers. Don't open unexpected attachments (even from known contacts). Verify unusual requests via another communication channel. Regularly review and clean up old emails containing sensitive information."
+                    },
+                    { "scam",
+                    "Enable spam filters at maximum setting. Be wary of urgent requests for information or money transfers. Don't open unexpected attachments (even from known contacts). Verify unusual requests via another communication channel. Regularly review and clean up old emails containing sensitive information."
                     },
                 };
 
