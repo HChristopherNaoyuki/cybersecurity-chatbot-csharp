@@ -10,6 +10,7 @@ namespace cybersecurity_chatbot_csharp
     {
         static void Main(string[] args)
         {
+            // Main program flow that orchestrates all the chatbot functions
             // Task 1: Play voice greeting
             PlayVoiceGreeting();
 
@@ -24,19 +25,24 @@ namespace cybersecurity_chatbot_csharp
             StartChat(userName);
         }
 
+        /// <summary>
+        /// Plays a welcome sound from a WAV file
+        /// </summary>
         static void PlayVoiceGreeting()
         {
             try
             {
+                // Construct path to audio file
                 var basePath = AppDomain.CurrentDomain.BaseDirectory;
                 string relativePath = Path.Combine("Audio", "welcome.wav");
                 string audioPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
 
+                // Check if file exists and play it
                 if (File.Exists(audioPath))
                 {
                     SoundPlayer player = new SoundPlayer(audioPath);
                     player.Load();
-                    player.PlaySync();
+                    player.PlaySync(); // Play synchronously
                 }
                 else
                 {
@@ -53,6 +59,9 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Displays cybersecurity-themed ASCII art banner
+        /// </summary>
         static void DisplayAsciiArt()
         {
             try
@@ -97,6 +106,10 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Prompts user for their name and validates input
+        /// </summary>
+        /// <returns>The validated user name</returns>
         static string GetUserName()
         {
             try
@@ -107,6 +120,7 @@ namespace cybersecurity_chatbot_csharp
 
                 string userName = Console.ReadLine();
 
+                // Validate input is not empty
                 while (string.IsNullOrWhiteSpace(userName))
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -122,10 +136,14 @@ namespace cybersecurity_chatbot_csharp
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error getting user name: {ex.Message}");
                 Console.ResetColor();
-                return "User";
+                return "User"; // Default name if error occurs
             }
         }
 
+        /// <summary>
+        /// Displays personalized welcome message
+        /// </summary>
+        /// <param name="userName">The name to include in welcome message</param>
         static void DisplayWelcomeMessage(string userName)
         {
             try
@@ -145,21 +163,30 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Types out text character by character with a delay for effect
+        /// </summary>
+        /// <param name="text">Text to display</param>
+        /// <param name="delay">Delay between characters in milliseconds</param>
         static void TypeText(string text, int delay = 30)
         {
             foreach (char c in text)
             {
                 Console.Write(c);
-                Thread.Sleep(delay);
+                Thread.Sleep(delay); // Pause between characters
             }
             Console.WriteLine();
         }
 
+        /// <summary>
+        /// Main chat loop that processes user input and provides responses
+        /// </summary>
+        /// <param name="userName">Name of user for personalized responses</param>
         static void StartChat(string userName)
         {
             try
             {
-                // Expanded cybersecurity knowledge base
+                // Expanded cybersecurity knowledge base - maps keywords to responses
                 Dictionary<string, string> responses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
                     // General questions
@@ -219,10 +246,12 @@ namespace cybersecurity_chatbot_csharp
                     },
                 };
 
+                // Display initial instructions
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 TypeText("Type 'help' to see topics I can discuss or 'exit' to quit.", 30);
                 Console.ResetColor();
 
+                // Main chat loop
                 while (true)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkCyan;
@@ -231,6 +260,7 @@ namespace cybersecurity_chatbot_csharp
 
                     string userInput = Console.ReadLine()?.Trim();
 
+                    // Handle empty input
                     if (string.IsNullOrWhiteSpace(userInput))
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
@@ -239,6 +269,7 @@ namespace cybersecurity_chatbot_csharp
                         continue;
                     }
 
+                    // Check for exit command
                     if (userInput.Equals("exit", StringComparison.OrdinalIgnoreCase))
                     {
                         Console.ForegroundColor = ConsoleColor.Magenta;
@@ -247,6 +278,7 @@ namespace cybersecurity_chatbot_csharp
                         break;
                     }
 
+                    // Search for matching response in knowledge base
                     bool responseFound = false;
                     foreach (var keyword in responses.Keys)
                     {
@@ -262,6 +294,7 @@ namespace cybersecurity_chatbot_csharp
                         }
                     }
 
+                    // Handle unknown topics
                     if (!responseFound)
                     {
                         Console.ForegroundColor = ConsoleColor.DarkCyan;
