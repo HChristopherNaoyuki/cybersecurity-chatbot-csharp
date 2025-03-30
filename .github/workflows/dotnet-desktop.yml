@@ -64,7 +64,7 @@ jobs:
     - name: Verify ASCII art display
       run: |
         # PowerShell script to verify the built executable and its output
-        $programPath = "cybersecurity-chatbot-csharp/bin/Release/net8.0/cybersecurity-chatbot-csharp.exe"
+        $programPath = "cybersecurity-chatbot-csharp/cybersecurity-chatbot-csharp/bin/Release/net8.0/cybersecurity-chatbot-csharp.exe"
         if (-not (Test-Path $programPath)) {
           # If executable not found, write error and exit with failure code
           Write-Output "Built executable not found at expected location: $programPath"
