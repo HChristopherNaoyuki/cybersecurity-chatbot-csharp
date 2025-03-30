@@ -1,127 +1,81 @@
-# ==============================================
-# .NET Core CI/CD Pipeline for Cybersecurity Chatbot
-# ==============================================
-# This automated workflow handles:
-# - Code compilation
-# - Dependency management
-# - Unit testing
-# - Artifact generation
-# - Test reporting
-
-# Workflow identifier (appears in GitHub Actions UI)
+# Cybersecurity Chatbot CI Pipeline
+# Simplified version focusing on core build/test operations
 name: .NET Core CI
 
-# ========================
-# TRIGGER CONFIGURATION
-# ========================
+# Trigger on pushes and PRs to main branch only
 on:
-  # Trigger on push events to main/master branches
   push:
-    branches: [ "main", "master" ]  # Supports modern (main) and legacy (master) branch names
-  
-  # Trigger on pull requests targeting main/master
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "master" ]
-    # Note: Runs in the context of the merge commit
+    branches: [ "main" ]
 
-# =================
-# JOBS DEFINITION
-# =================
 jobs:
-  # Primary job for building and testing the application
-  build-and-test:
-    # Windows runner required for .NET applications
-    runs-on: windows-latest  # Uses GitHub-hosted Windows Server 2022
+  build:
+    # Use Ubuntu runner for better compatibility
+    runs-on: ubuntu-latest
     
-    # ====================
-    # EXECUTION STEPS
-    # ====================
     steps:
-    # -----------------------------------
-    # STEP 1: REPOSITORY CHECKOUT
-    # -----------------------------------
+    # ----------------------------------
+    # STEP 1: Checkout code
+    # ----------------------------------
     - name: Checkout repository
-      uses: actions/checkout@v4  # Official GitHub Action
-      with:
-        fetch-depth: 0  # Gets complete git history (needed for version tagging)
-        # Note: fetch-depth: 0 is slightly slower but enables full version info
-
-    # -----------------------------------
-    # STEP 2: .NET ENVIRONMENT SETUP
-    # -----------------------------------
+      uses: actions/checkout@v4
+      # Simple checkout without history to speed up process
+      
+    # ----------------------------------
+    # STEP 2: Setup .NET
+    # ----------------------------------
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'  # Installs latest patch of .NET 8.0
-        # Recommendation: Pin to exact version for production (e.g., '8.0.101')
-
-    # -----------------------------------
-    # STEP 3: DEPENDENCY RESTORATION
-    # -----------------------------------
+        dotnet-version: '8.0.x'  # Latest stable .NET 8 version
+        
+    # ----------------------------------
+    # STEP 3: Restore dependencies
+    # ----------------------------------
     - name: Restore dependencies
-      run: dotnet restore
-      env:
-        NUGET_CACHE: ${{ github.workspace }}/.nuget/cache  # Custom cache location
-        # Benefits:
-        # - Faster subsequent builds
-        # - Isolated from system global cache
-        # - Cleaner workspace
-
-    # -----------------------------------
-    # STEP 4: SOLUTION COMPILATION
-    # -----------------------------------
+      run: dotnet restore ./cybersecurity-chatbot-csharp.sln
+      # Explicit solution file path prevents ambiguity
+      
+    # ----------------------------------
+    # STEP 4: Build solution
+    # ----------------------------------
     - name: Build solution
-      run: dotnet build --configuration Release --no-restore --verbosity normal
-      env:
-        DOTNET_CLI_TELEMETRY_OPTOUT: 1  # Disables Microsoft telemetry
-        # Additional options considered:
-        # --warnaserror (treat warnings as errors)
-        # --p:ContinuousIntegrationBuild=true (CI-optimized build)
-
-    # -----------------------------------
-    # STEP 5: UNIT TEST EXECUTION
-    # -----------------------------------
-    - name: Run tests
-      run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
-      env:
-        DOTNET_NOLOGO: true  # Suppresses .NET branding messages
-        # Test configuration:
-        # --no-build: Uses existing build output
-        # --logger: Generates Visual Studio Test Results format
-        # Consider adding: --collect:"Code Coverage" for coverage reports
-
-    # -----------------------------------
-    # STEP 6: TEST RESULTS PUBLISHING
-    # -----------------------------------
-    - name: Publish test results
-      uses: actions/upload-artifact@v4
-      if: always()  # Uploads even if previous steps fail
-      with:
-        name: test-results-${{ github.run_id }}  # Unique artifact name
-        path: |
-          **/TestResults/*.trx
-          **/coverage.cobertura.xml
-        # Artifacts can be downloaded from GitHub UI
-        # Retention: 90 days by default
-
-    # -----------------------------------
-    # STEP 7: ARTIFACT GENERATION
-    # -----------------------------------
-    - name: Create build artifact
-      run: dotnet publish --configuration Release --output ./publish --no-restore
-      # Publishes:
-      # - Compiled binaries
-      # - Runtime dependencies
-      # - Content files
-      # --no-restore: Uses previously restored packages
-
-    # -----------------------------------
-    # STEP 8: ARTIFACT UPLOAD
-    # -----------------------------------
-    - name: Upload build artifact
+      run: dotnet build ./cybersecurity-chatbot-csharp.sln --configuration Release --no-restore
+      # Key flags:
+      # --configuration Release: Production-optimized build
+      # --no-restore: Skip redundant package restoration
+      
+    # ----------------------------------
+    # STEP 5: Run tests
+    # ----------------------------------
+    - name: Run unit tests
+      run: dotnet test ./cybersecurity-chatbot-csharp.sln --configuration Release --no-build --verbosity normal
+      # Key flags:
+      # --no-build: Use existing build output
+      # --verbosity normal: Balanced log output
+      
+    # ----------------------------------
+    # STEP 6: Package artifacts
+    # ----------------------------------
+    - name: Create publish package
+      run: |
+        mkdir -p ./publish
+        dotnet publish ./cybersecurity-chatbot-csharp/cybersecurity-chatbot-csharp.csproj \
+          --configuration Release \
+          --output ./publish \
+          --no-restore \
+          --no-build \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true
+      # Creates self-contained, optimized deployment package
+      
+    # ----------------------------------
+    # STEP 7: Upload artifacts
+    # ----------------------------------
+    - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: cybersecurity-chatbot-${{ github.run_number }}
-        path: ./publish/**/*
-        retention-days: 7  # Reduces storage usage
-        # Alternative: Use actions/cache for better performance
+        name: chatbot-release
+        path: ./publish
+        retention-days: 3  # Short retention to save storage
