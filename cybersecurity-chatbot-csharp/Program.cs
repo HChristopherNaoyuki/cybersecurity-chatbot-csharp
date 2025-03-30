@@ -4,6 +4,8 @@ using System.IO;
 using System.Threading;
 using System.Collections.Generic;
 
+// GitHub: https://github.com/HChristopherNaoyuki
+
 namespace cybersecurity_chatbot_csharp
 {
     class Program
