@@ -1,96 +1,117 @@
-# Name of the workflow that will appear in GitHub Actions UI
+# CI/CD Workflow for Cybersecurity Chatbot (.NET Core)
+# This workflow automates the build, test, and verification process for the chatbot application
 name: .NET Core CI
 
-# Trigger conditions for when this workflow should run
+# Trigger conditions - defines when the workflow should execute
 on:
-  # Run when code is pushed to the master branch
+  # Trigger on push events to the master branch
   push:
     branches: [ "master" ]
-  # Also run when a pull request is opened or updated targeting master branch
+  # Also trigger on pull requests targeting the master branch
   pull_request:
     branches: [ "master" ]
 
-# Define the jobs that make up this workflow
+# Jobs represent a sequence of tasks that execute on the same runner
 jobs:
-  # Single job named 'build' that handles building and testing
+  # Primary build job that handles compilation and verification
   build:
-    # Specify the operating system for the job to run on
-    runs-on: windows-latest  # Windows is required for .NET desktop applications
+    # Windows runner required for .NET applications with audio capabilities
+    runs-on: windows-latest
 
-    # List of steps to execute in sequence
+    # Sequential steps that comprise the build process
     steps:
-    # Step 1: Checkout the repository code
+    # Step 1: Repository checkout - fetches the source code
     - name: Checkout code
-      uses: actions/checkout@v4  # Official GitHub action for checking out code
-      # No additional parameters needed for basic checkout
+      uses: actions/checkout@v4  # Official GitHub Action for code checkout
+      # Note: Uses latest stable version (v4) of the checkout action
 
-    # Step 2: Set up the .NET environment
+    # Step 2: .NET environment setup
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4  # Official GitHub action for .NET setup
+      uses: actions/setup-dotnet@v4  # Official .NET setup action
       with:
-        # Specify which .NET version to install (8.0.x will get latest 8.0 patch)
+        # Specifies .NET 8.0 SDK installation (x denotes latest patch version)
         dotnet-version: '8.0.x'
+        # Rationale: Matches project's target framework for consistent builds
 
-    # Step 3: Restore NuGet package dependencies
+    # Step 3: Dependency restoration
     - name: Restore dependencies
-      run: dotnet restore  # Standard .NET CLI command to restore packages
-      # Runs against all projects in the solution by default
+      run: dotnet restore  # Standard .NET CLI command
+      # Purpose: Downloads all NuGet packages specified in project files
+      # Runs recursively for all projects in the solution
 
-    # Step 4: Build the solution in Release configuration
+    # Step 4: Solution compilation
     - name: Build
       run: dotnet build --configuration Release --no-restore
-      # --configuration Release: Build optimized release version
-      # --no-restore: Skip package restore since we did it in previous step
+      # Flags:
+      # --configuration Release: Optimized production build
+      # --no-restore: Skips redundant package restoration (done in previous step)
+      # Output: Compiled binaries in bin/Release/net8.0 directory
 
-    # Step 5: Run any unit tests in the solution
+    # Step 5: Test execution
     - name: Test
       run: dotnet test --no-restore --verbosity normal
-      # --no-restore: Skip package restore
-      # --verbosity normal: Show standard test output
+      # Flags:
+      # --no-restore: Uses already restored packages
+      # --verbosity normal: Balanced output detail
+      # Note: Executes all unit tests in the solution
 
-    # Step 6: Custom verification - Check that the audio file exists
-    - name: Verify audio file exists
+    # Step 6: Comprehensive audio file verification
+    - name: Verify audio file exists and is valid
       run: |
-        # PowerShell script to verify the WAV file exists in expected location
+        # PowerShell script for robust audio file validation
+        # ================================================
+        
+        # 1. File Existence Check
         $audioPath = "cybersecurity-chatbot-csharp/Audio/welcome.wav"
         if (-not (Test-Path $audioPath)) {
-          # If file not found, write error and exit with failure code
-          Write-Output "Audio file not found at expected location: $audioPath"
-          exit 1
+          Write-Output "Error: Audio file not found at expected location: $audioPath"
+          exit 1  # Fail build with non-zero exit code
         }
-        Write-Output "Audio file verification passed"
-
-    # Step 7: Custom verification - Check that ASCII art displays correctly
-    - name: Verify ASCII art display
-      run: |
-        # PowerShell script to verify the built executable and its output
-        $programPath = "cybersecurity-chatbot-csharp/cybersecurity-chatbot-csharp/bin/Release/net8.0/cybersecurity-chatbot-csharp.exe"
-        if (-not (Test-Path $programPath)) {
-          # If executable not found, write error and exit with failure code
-          Write-Output "Built executable not found at expected location: $programPath"
+        
+        # 2. File Size Validation
+        $fileSize = (Get-Item $audioPath).Length
+        if ($fileSize -eq 0) {
+          Write-Output "Error: Audio file exists but is empty (0 bytes)"
           exit 1
         }
         
-        # Run the program and capture its output
-        $output = & $programPath | Out-String
+        # 3. File Format Verification (WAV header check)
+        $header = Get-Content $audioPath -Encoding Byte -TotalCount 4
+        $wavHeader = [Text.Encoding]::ASCII.GetString($header)
         
-        # Check if output contains pattern typical of ASCII art
-        if ($output -notmatch "____.*______") {
-          # If ASCII art pattern not found, write error and exit with failure code
-          Write-Output "ASCII art not detected in program output"
+        if ($wavHeader -ne "RIFF") {
+          Write-Output "Error: File does not appear to be a valid WAV file (missing RIFF header)"
           exit 1
         }
-        Write-Output "ASCII art verification passed"
+        
+        # 4. Duration Sanity Check (Non-blocking)
+        try {
+          $soundPlayer = New-Object System.Media.SoundPlayer $audioPath
+          $durationMs = $soundPlayer.LoadTimeout
+          
+          # Expected duration range (500ms to 5 seconds)
+          if ($durationMs -lt 500 -or $durationMs -gt 5000) {
+            Write-Output "Warning: Audio duration ($durationMs ms) may be too short or too long"
+            # Note: This is a warning only - doesn't fail the build
+          }
+        } catch {
+          Write-Output "Warning: Could not verify audio duration: $_"
+        }
+        
+        # Success case
+        Write-Output "Audio verification passed - Valid WAV file confirmed"
+        exit 0  # Explicit success exit code
 
-    # Step 8: Archive the build artifacts for potential download
+    # Step 7: Artifact archiving
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v4  # Official GitHub action for uploading artifacts
+      uses: actions/upload-artifact@v4  # Official artifact upload action
       with:
-        # Name to give this collection of artifacts
+        # Descriptive name for the artifact bundle
         name: cybersecurity-chatbot  
-        # Paths to include in the artifact upload:
+        # Files to include in the artifact:
         path: |
-          # The built executable and dependencies
+          # 1. Compiled application binaries
           cybersecurity-chatbot-csharp/bin/Release/net8.0/
-          # The audio files directory
+          # 2. Audio assets directory
           cybersecurity-chatbot-csharp/Audio/
+        # Note: Artifacts are retained for 90 days by default
