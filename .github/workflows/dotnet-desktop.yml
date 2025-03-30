@@ -1,0 +1,65 @@
+name: .NET Core CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+
+    - name: Verify audio file exists
+      run: |
+        $audioPath = "cybersecurity_chatbot_csharp/Audio/welcome.wav"
+        if (-not (Test-Path $audioPath)) {
+          Write-Output "Audio file not found at expected location: $audioPath"
+          exit 1
+        }
+        Write-Output "Audio file verification passed"
+
+    - name: Verify ASCII art display
+      run: |
+        $programPath = "cybersecurity-chatbot-csharp/bin/Release/net8.0/cybersecurity-chatbot-csharp.exe"
+        if (-not (Test-Path $programPath)) {
+          Write-Output "Built executable not found at expected location: $programPath"
+          exit 1
+        }
+        
+        # Run the program with a timeout and capture output
+        $output = & $programPath | Out-String
+        
+        # Check for ASCII art pattern
+        if ($output -notmatch "____.*______") {
+          Write-Output "ASCII art not detected in program output"
+          exit 1
+        }
+        Write-Output "ASCII art verification passed"
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cybersecurity-chatbot
+        path: |
+          cybersecurity-chatbot-csharp/bin/Release/net8.0/
+          cybersecurity-chatbot-csharp/Audio/
