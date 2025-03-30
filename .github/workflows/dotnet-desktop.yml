@@ -1,5 +1,3 @@
-# Cybersecurity Chatbot CI Pipeline (Windows)
-# Optimized for Windows runner with .NET 8
 name: Windows .NET CI
 
 on:
@@ -10,59 +8,63 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest  # Explicit Windows runner
+    runs-on: windows-latest
     
     steps:
     # ----------------------------------
-    # 1. CHECKOUT - Get the latest code
+    # 1. CHECKOUT - Get the code
     # ----------------------------------
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Get full git history for version info
 
     # ----------------------------------
     # 2. DOTNET SETUP - Prepare environment
     # ----------------------------------
-    - name: Setup .NET 8 SDK
+    - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'  # Latest stable .NET 8
+        dotnet-version: |
+          6.0.x  # Required for Windows Desktop workloads
+          8.0.x  # Your target framework
 
     # ----------------------------------
-    # 3. BUILD - Compile the solution
+    # 3. INSTALL WINDOWS DESKTOP WORKLOAD
     # ----------------------------------
-    - name: Build solution
-      run: |
-        # Explicit solution path avoids ambiguity
-        $solutionPath = Get-ChildItem -Filter *.sln -Recurse | Select-Object -First 1
-        if (-not $solutionPath) {
-          Write-Error "No solution file found!"
-          exit 1
-        }
-        dotnet build $solutionPath.FullName --configuration Release
-      shell: pwsh  # Use PowerShell for better Windows integration
-
-    # ----------------------------------
-    # 4. TEST - Run unit tests
-    # ----------------------------------
-    - name: Run tests
-      run: |
-        $projectPath = Get-ChildItem -Filter *.csproj -Recurse | Select-Object -First 1
-        if (-not $projectPath) {
-          Write-Error "No project file found!"
-          exit 1
-        }
-        dotnet test $projectPath.FullName --configuration Release --no-build --logger "trx"
+    - name: Install Windows Desktop SDK
+      run: dotnet workload install windowsdesktop --skip-manifest-update
       shell: pwsh
 
     # ----------------------------------
-    # 5. PUBLISH - Create deployment package
+    # 4. BUILD - Compile the solution
+    # ----------------------------------
+    - name: Build solution
+      run: |
+        # Use MSBuild from Visual Studio (not .NET Core MSBuild)
+        $msbuildPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+        if (-not (Test-Path $msbuildPath)) {
+          $msbuildPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
+        }
+        
+        & $msbuildPath "cybersecurity-chatbot-csharp.sln" `
+          /p:Configuration=Release `
+          /p:Platform="Any CPU" `
+          /p:DeployOnBuild=true `
+          /p:PublishProfile=FolderProfile
+      shell: pwsh
+
+    # ----------------------------------
+    # 5. TEST - Run unit tests
+    # ----------------------------------
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build
+      shell: pwsh
+
+    # ----------------------------------
+    # 6. PUBLISH - Create deployment package
     # ----------------------------------
     - name: Publish application
       run: |
-        $projectPath = Get-ChildItem -Filter *.csproj -Recurse | Select-Object -First 1
-        dotnet publish $projectPath.FullName `
+        dotnet publish "cybersecurity-chatbot-csharp\cybersecurity-chatbot-csharp.csproj" `
           --configuration Release `
           --output ./publish `
           --runtime win-x64 `
@@ -71,13 +73,11 @@ jobs:
       shell: pwsh
 
     # ----------------------------------
-    # 6. ARTIFACTS - Package the results
+    # 7. ARTIFACTS - Package the results
     # ----------------------------------
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: chatbot-package
-        path: |
-          ./publish/
-          !./publish/*.pdb  # Exclude debug symbols
+        path: ./publish
         retention-days: 3
