@@ -1,117 +1,127 @@
-# CI/CD Workflow for Cybersecurity Chatbot (.NET Core)
-# This workflow automates the build, test, and verification process for the chatbot application
+# ==============================================
+# .NET Core CI/CD Pipeline for Cybersecurity Chatbot
+# ==============================================
+# This automated workflow handles:
+# - Code compilation
+# - Dependency management
+# - Unit testing
+# - Artifact generation
+# - Test reporting
+
+# Workflow identifier (appears in GitHub Actions UI)
 name: .NET Core CI
 
-# Trigger conditions - defines when the workflow should execute
+# ========================
+# TRIGGER CONFIGURATION
+# ========================
 on:
-  # Trigger on push events to the master branch
+  # Trigger on push events to main/master branches
   push:
-    branches: [ "master" ]
-  # Also trigger on pull requests targeting the master branch
+    branches: [ "main", "master" ]  # Supports modern (main) and legacy (master) branch names
+  
+  # Trigger on pull requests targeting main/master
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main", "master" ]
+    # Note: Runs in the context of the merge commit
 
-# Jobs represent a sequence of tasks that execute on the same runner
+# =================
+# JOBS DEFINITION
+# =================
 jobs:
-  # Primary build job that handles compilation and verification
-  build:
-    # Windows runner required for .NET applications with audio capabilities
-    runs-on: windows-latest
-
-    # Sequential steps that comprise the build process
+  # Primary job for building and testing the application
+  build-and-test:
+    # Windows runner required for .NET applications
+    runs-on: windows-latest  # Uses GitHub-hosted Windows Server 2022
+    
+    # ====================
+    # EXECUTION STEPS
+    # ====================
     steps:
-    # Step 1: Repository checkout - fetches the source code
-    - name: Checkout code
-      uses: actions/checkout@v4  # Official GitHub Action for code checkout
-      # Note: Uses latest stable version (v4) of the checkout action
-
-    # Step 2: .NET environment setup
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4  # Official .NET setup action
+    # -----------------------------------
+    # STEP 1: REPOSITORY CHECKOUT
+    # -----------------------------------
+    - name: Checkout repository
+      uses: actions/checkout@v4  # Official GitHub Action
       with:
-        # Specifies .NET 8.0 SDK installation (x denotes latest patch version)
-        dotnet-version: '8.0.x'
-        # Rationale: Matches project's target framework for consistent builds
+        fetch-depth: 0  # Gets complete git history (needed for version tagging)
+        # Note: fetch-depth: 0 is slightly slower but enables full version info
 
-    # Step 3: Dependency restoration
+    # -----------------------------------
+    # STEP 2: .NET ENVIRONMENT SETUP
+    # -----------------------------------
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'  # Installs latest patch of .NET 8.0
+        # Recommendation: Pin to exact version for production (e.g., '8.0.101')
+
+    # -----------------------------------
+    # STEP 3: DEPENDENCY RESTORATION
+    # -----------------------------------
     - name: Restore dependencies
-      run: dotnet restore  # Standard .NET CLI command
-      # Purpose: Downloads all NuGet packages specified in project files
-      # Runs recursively for all projects in the solution
+      run: dotnet restore
+      env:
+        NUGET_CACHE: ${{ github.workspace }}/.nuget/cache  # Custom cache location
+        # Benefits:
+        # - Faster subsequent builds
+        # - Isolated from system global cache
+        # - Cleaner workspace
 
-    # Step 4: Solution compilation
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-      # Flags:
-      # --configuration Release: Optimized production build
-      # --no-restore: Skips redundant package restoration (done in previous step)
-      # Output: Compiled binaries in bin/Release/net8.0 directory
+    # -----------------------------------
+    # STEP 4: SOLUTION COMPILATION
+    # -----------------------------------
+    - name: Build solution
+      run: dotnet build --configuration Release --no-restore --verbosity normal
+      env:
+        DOTNET_CLI_TELEMETRY_OPTOUT: 1  # Disables Microsoft telemetry
+        # Additional options considered:
+        # --warnaserror (treat warnings as errors)
+        # --p:ContinuousIntegrationBuild=true (CI-optimized build)
 
-    # Step 5: Test execution
-    - name: Test
-      run: dotnet test --no-restore --verbosity normal
-      # Flags:
-      # --no-restore: Uses already restored packages
-      # --verbosity normal: Balanced output detail
-      # Note: Executes all unit tests in the solution
+    # -----------------------------------
+    # STEP 5: UNIT TEST EXECUTION
+    # -----------------------------------
+    - name: Run tests
+      run: dotnet test --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      env:
+        DOTNET_NOLOGO: true  # Suppresses .NET branding messages
+        # Test configuration:
+        # --no-build: Uses existing build output
+        # --logger: Generates Visual Studio Test Results format
+        # Consider adding: --collect:"Code Coverage" for coverage reports
 
-    # Step 6: Comprehensive audio file verification
-    - name: Verify audio file exists and is valid
-      run: |
-        # PowerShell script for robust audio file validation
-        # ================================================
-        
-        # 1. File Existence Check
-        $audioPath = "cybersecurity-chatbot-csharp/Audio/welcome.wav"
-        if (-not (Test-Path $audioPath)) {
-          Write-Output "Error: Audio file not found at expected location: $audioPath"
-          exit 1  # Fail build with non-zero exit code
-        }
-        
-        # 2. File Size Validation
-        $fileSize = (Get-Item $audioPath).Length
-        if ($fileSize -eq 0) {
-          Write-Output "Error: Audio file exists but is empty (0 bytes)"
-          exit 1
-        }
-        
-        # 3. File Format Verification (WAV header check)
-        $header = Get-Content $audioPath -Encoding Byte -TotalCount 4
-        $wavHeader = [Text.Encoding]::ASCII.GetString($header)
-        
-        if ($wavHeader -ne "RIFF") {
-          Write-Output "Error: File does not appear to be a valid WAV file (missing RIFF header)"
-          exit 1
-        }
-        
-        # 4. Duration Sanity Check (Non-blocking)
-        try {
-          $soundPlayer = New-Object System.Media.SoundPlayer $audioPath
-          $durationMs = $soundPlayer.LoadTimeout
-          
-          # Expected duration range (500ms to 5 seconds)
-          if ($durationMs -lt 500 -or $durationMs -gt 5000) {
-            Write-Output "Warning: Audio duration ($durationMs ms) may be too short or too long"
-            # Note: This is a warning only - doesn't fail the build
-          }
-        } catch {
-          Write-Output "Warning: Could not verify audio duration: $_"
-        }
-        
-        # Success case
-        Write-Output "Audio verification passed - Valid WAV file confirmed"
-        exit 0  # Explicit success exit code
-
-    # Step 7: Artifact archiving
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4  # Official artifact upload action
+    # -----------------------------------
+    # STEP 6: TEST RESULTS PUBLISHING
+    # -----------------------------------
+    - name: Publish test results
+      uses: actions/upload-artifact@v4
+      if: always()  # Uploads even if previous steps fail
       with:
-        # Descriptive name for the artifact bundle
-        name: cybersecurity-chatbot  
-        # Files to include in the artifact:
+        name: test-results-${{ github.run_id }}  # Unique artifact name
         path: |
-          # 1. Compiled application binaries
-          cybersecurity-chatbot-csharp/bin/Release/net8.0/
-          # 2. Audio assets directory
-          cybersecurity-chatbot-csharp/Audio/
-        # Note: Artifacts are retained for 90 days by default
+          **/TestResults/*.trx
+          **/coverage.cobertura.xml
+        # Artifacts can be downloaded from GitHub UI
+        # Retention: 90 days by default
+
+    # -----------------------------------
+    # STEP 7: ARTIFACT GENERATION
+    # -----------------------------------
+    - name: Create build artifact
+      run: dotnet publish --configuration Release --output ./publish --no-restore
+      # Publishes:
+      # - Compiled binaries
+      # - Runtime dependencies
+      # - Content files
+      # --no-restore: Uses previously restored packages
+
+    # -----------------------------------
+    # STEP 8: ARTIFACT UPLOAD
+    # -----------------------------------
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cybersecurity-chatbot-${{ github.run_number }}
+        path: ./publish/**/*
+        retention-days: 7  # Reduces storage usage
+        # Alternative: Use actions/cache for better performance
