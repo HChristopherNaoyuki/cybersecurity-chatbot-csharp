@@ -1,4 +1,4 @@
-name: Windows .NET CI
+name: .NET Core CI
 
 on:
   push:
@@ -9,75 +9,31 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    
+
     steps:
-    # ----------------------------------
-    # 1. CHECKOUT - Get the code
-    # ----------------------------------
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    # ----------------------------------
-    # 2. DOTNET SETUP - Prepare environment
-    # ----------------------------------
-    - name: Setup .NET SDK
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: |
-          6.0.x  # Required for Windows Desktop workloads
-          8.0.x  # Your target framework
+        dotnet-version: '8.0.x'
 
-    # ----------------------------------
-    # 3. INSTALL WINDOWS DESKTOP WORKLOAD
-    # ----------------------------------
-    - name: Install Windows Desktop SDK
-      run: dotnet workload install windowsdesktop --skip-manifest-update
-      shell: pwsh
+    - name: Restore dependencies
+      run: dotnet restore
 
-    # ----------------------------------
-    # 4. BUILD - Compile the solution
-    # ----------------------------------
     - name: Build solution
-      run: |
-        # Use MSBuild from Visual Studio (not .NET Core MSBuild)
-        $msbuildPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
-        if (-not (Test-Path $msbuildPath)) {
-          $msbuildPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-        }
-        
-        & $msbuildPath "cybersecurity-chatbot-csharp.sln" `
-          /p:Configuration=Release `
-          /p:Platform="Any CPU" `
-          /p:DeployOnBuild=true `
-          /p:PublishProfile=FolderProfile
-      shell: pwsh
+      run: dotnet build --configuration Release --no-restore
 
-    # ----------------------------------
-    # 5. TEST - Run unit tests
-    # ----------------------------------
     - name: Run tests
-      run: dotnet test --configuration Release --no-build
-      shell: pwsh
+      run: dotnet test --configuration Release --no-build --verbosity normal
 
-    # ----------------------------------
-    # 6. PUBLISH - Create deployment package
-    # ----------------------------------
     - name: Publish application
-      run: |
-        dotnet publish "cybersecurity-chatbot-csharp\cybersecurity-chatbot-csharp.csproj" `
-          --configuration Release `
-          --output ./publish `
-          --runtime win-x64 `
-          --self-contained true `
-          /p:PublishSingleFile=true
-      shell: pwsh
+      run: dotnet publish --configuration Release --output ./publish
 
-    # ----------------------------------
-    # 7. ARTIFACTS - Package the results
-    # ----------------------------------
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: chatbot-package
+        name: app-package
         path: ./publish
         retention-days: 3
