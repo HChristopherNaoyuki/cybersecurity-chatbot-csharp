@@ -1,65 +1,96 @@
+# Name of the workflow that will appear in GitHub Actions UI
 name: .NET Core CI
 
+# Trigger conditions for when this workflow should run
 on:
+  # Run when code is pushed to the master branch
   push:
     branches: [ "master" ]
+  # Also run when a pull request is opened or updated targeting master branch
   pull_request:
     branches: [ "master" ]
 
+# Define the jobs that make up this workflow
 jobs:
+  # Single job named 'build' that handles building and testing
   build:
+    # Specify the operating system for the job to run on
+    runs-on: windows-latest  # Windows is required for .NET desktop applications
 
-    runs-on: windows-latest
-
+    # List of steps to execute in sequence
     steps:
+    # Step 1: Checkout the repository code
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v4  # Official GitHub action for checking out code
+      # No additional parameters needed for basic checkout
 
+    # Step 2: Set up the .NET environment
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v4  # Official GitHub action for .NET setup
       with:
+        # Specify which .NET version to install (8.0.x will get latest 8.0 patch)
         dotnet-version: '8.0.x'
 
+    # Step 3: Restore NuGet package dependencies
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore  # Standard .NET CLI command to restore packages
+      # Runs against all projects in the solution by default
 
+    # Step 4: Build the solution in Release configuration
     - name: Build
       run: dotnet build --configuration Release --no-restore
+      # --configuration Release: Build optimized release version
+      # --no-restore: Skip package restore since we did it in previous step
 
+    # Step 5: Run any unit tests in the solution
     - name: Test
       run: dotnet test --no-restore --verbosity normal
+      # --no-restore: Skip package restore
+      # --verbosity normal: Show standard test output
 
+    # Step 6: Custom verification - Check that the audio file exists
     - name: Verify audio file exists
       run: |
-        $audioPath = "cybersecurity_chatbot_csharp/Audio/welcome.wav"
+        # PowerShell script to verify the WAV file exists in expected location
+        $audioPath = "cybersecurity-chatbot-csharp/Audio/welcome.wav"
         if (-not (Test-Path $audioPath)) {
+          # If file not found, write error and exit with failure code
           Write-Output "Audio file not found at expected location: $audioPath"
           exit 1
         }
         Write-Output "Audio file verification passed"
 
+    # Step 7: Custom verification - Check that ASCII art displays correctly
     - name: Verify ASCII art display
       run: |
+        # PowerShell script to verify the built executable and its output
         $programPath = "cybersecurity-chatbot-csharp/bin/Release/net8.0/cybersecurity-chatbot-csharp.exe"
         if (-not (Test-Path $programPath)) {
+          # If executable not found, write error and exit with failure code
           Write-Output "Built executable not found at expected location: $programPath"
           exit 1
         }
         
-        # Run the program with a timeout and capture output
+        # Run the program and capture its output
         $output = & $programPath | Out-String
         
-        # Check for ASCII art pattern
+        # Check if output contains pattern typical of ASCII art
         if ($output -notmatch "____.*______") {
+          # If ASCII art pattern not found, write error and exit with failure code
           Write-Output "ASCII art not detected in program output"
           exit 1
         }
         Write-Output "ASCII art verification passed"
 
+    # Step 8: Archive the build artifacts for potential download
     - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4  # Official GitHub action for uploading artifacts
       with:
-        name: cybersecurity-chatbot
+        # Name to give this collection of artifacts
+        name: cybersecurity-chatbot  
+        # Paths to include in the artifact upload:
         path: |
+          # The built executable and dependencies
           cybersecurity-chatbot-csharp/bin/Release/net8.0/
+          # The audio files directory
           cybersecurity-chatbot-csharp/Audio/
