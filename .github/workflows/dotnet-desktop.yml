@@ -1,81 +1,83 @@
-# Cybersecurity Chatbot CI Pipeline
-# Simplified version focusing on core build/test operations
-name: .NET Core CI
+# Cybersecurity Chatbot CI Pipeline (Windows)
+# Optimized for Windows runner with .NET 8
+name: Windows .NET CI
 
-# Trigger on pushes and PRs to main branch only
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
 
 jobs:
   build:
-    # Use Ubuntu runner for better compatibility
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # Explicit Windows runner
     
     steps:
     # ----------------------------------
-    # STEP 1: Checkout code
+    # 1. CHECKOUT - Get the latest code
     # ----------------------------------
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v4
-      # Simple checkout without history to speed up process
-      
+      with:
+        fetch-depth: 0  # Get full git history for version info
+
     # ----------------------------------
-    # STEP 2: Setup .NET
+    # 2. DOTNET SETUP - Prepare environment
     # ----------------------------------
-    - name: Setup .NET SDK
+    - name: Setup .NET 8 SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'  # Latest stable .NET 8 version
-        
+        dotnet-version: '8.0.x'  # Latest stable .NET 8
+
     # ----------------------------------
-    # STEP 3: Restore dependencies
-    # ----------------------------------
-    - name: Restore dependencies
-      run: dotnet restore ./cybersecurity-chatbot-csharp.sln
-      # Explicit solution file path prevents ambiguity
-      
-    # ----------------------------------
-    # STEP 4: Build solution
+    # 3. BUILD - Compile the solution
     # ----------------------------------
     - name: Build solution
-      run: dotnet build ./cybersecurity-chatbot-csharp.sln --configuration Release --no-restore
-      # Key flags:
-      # --configuration Release: Production-optimized build
-      # --no-restore: Skip redundant package restoration
-      
-    # ----------------------------------
-    # STEP 5: Run tests
-    # ----------------------------------
-    - name: Run unit tests
-      run: dotnet test ./cybersecurity-chatbot-csharp.sln --configuration Release --no-build --verbosity normal
-      # Key flags:
-      # --no-build: Use existing build output
-      # --verbosity normal: Balanced log output
-      
-    # ----------------------------------
-    # STEP 6: Package artifacts
-    # ----------------------------------
-    - name: Create publish package
       run: |
-        mkdir -p ./publish
-        dotnet publish ./cybersecurity-chatbot-csharp/cybersecurity-chatbot-csharp.csproj \
-          --configuration Release \
-          --output ./publish \
-          --no-restore \
-          --no-build \
-          -p:PublishSingleFile=true \
-          -p:PublishTrimmed=true
-      # Creates self-contained, optimized deployment package
-      
+        # Explicit solution path avoids ambiguity
+        $solutionPath = Get-ChildItem -Filter *.sln -Recurse | Select-Object -First 1
+        if (-not $solutionPath) {
+          Write-Error "No solution file found!"
+          exit 1
+        }
+        dotnet build $solutionPath.FullName --configuration Release
+      shell: pwsh  # Use PowerShell for better Windows integration
+
     # ----------------------------------
-    # STEP 7: Upload artifacts
+    # 4. TEST - Run unit tests
     # ----------------------------------
-    - name: Upload build artifacts
+    - name: Run tests
+      run: |
+        $projectPath = Get-ChildItem -Filter *.csproj -Recurse | Select-Object -First 1
+        if (-not $projectPath) {
+          Write-Error "No project file found!"
+          exit 1
+        }
+        dotnet test $projectPath.FullName --configuration Release --no-build --logger "trx"
+      shell: pwsh
+
+    # ----------------------------------
+    # 5. PUBLISH - Create deployment package
+    # ----------------------------------
+    - name: Publish application
+      run: |
+        $projectPath = Get-ChildItem -Filter *.csproj -Recurse | Select-Object -First 1
+        dotnet publish $projectPath.FullName `
+          --configuration Release `
+          --output ./publish `
+          --runtime win-x64 `
+          --self-contained true `
+          /p:PublishSingleFile=true
+      shell: pwsh
+
+    # ----------------------------------
+    # 6. ARTIFACTS - Package the results
+    # ----------------------------------
+    - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: chatbot-release
-        path: ./publish
-        retention-days: 3  # Short retention to save storage
+        name: chatbot-package
+        path: |
+          ./publish/
+          !./publish/*.pdb  # Exclude debug symbols
+        retention-days: 3
