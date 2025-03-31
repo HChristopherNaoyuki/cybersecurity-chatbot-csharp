@@ -3,48 +3,56 @@ using System.Media;
 using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-
-// GitHub: https://github.com/HChristopherNaoyuki
+using System.Linq;
 
 namespace cybersecurity_chatbot_csharp
 {
+    /// <summary>
+    /// Main class for the Cybersecurity Awareness Chatbot application.
+    /// This console-based chatbot educates users about cybersecurity best practices
+    /// through interactive conversations and responds to multiple security-related
+    /// topics in a single user query.
+    /// </summary>
     class Program
     {
+        /// <summary>
+        /// Application entry point that orchestrates the chatbot workflow.
+        /// Execution sequence:
+        /// 1. Plays welcome audio greeting
+        /// 2. Displays cybersecurity-themed ASCII art
+        /// 3. Collects and validates user's name
+        /// 4. Displays personalized welcome message
+        /// 5. Enters main chat loop
+        /// </summary>
         static void Main(string[] args)
         {
-            // Main program flow that orchestrates all the chatbot functions
-            // Task 1: Play voice greeting
             PlayVoiceGreeting();
-
-            // Task 2: Display ASCII art
             DisplayAsciiArt();
-
-            // Task 3: Get user's name and welcome them
             string userName = GetUserName();
             DisplayWelcomeMessage(userName);
-
-            // Task 4: Start the chatbot conversation with expanded knowledge base
             StartChat(userName);
         }
 
         /// <summary>
-        /// Plays a welcome sound from a WAV file
+        /// Plays a WAV format audio greeting synchronously.
+        /// Handles cases where audio file is missing or playback fails.
+        /// Audio file path is constructed relative to the executable location.
         /// </summary>
         static void PlayVoiceGreeting()
         {
             try
             {
-                // Construct path to audio file
                 var basePath = AppDomain.CurrentDomain.BaseDirectory;
                 string relativePath = Path.Combine("Audio", "welcome.wav");
                 string audioPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
 
-                // Check if file exists and play it
                 if (File.Exists(audioPath))
                 {
-                    SoundPlayer player = new SoundPlayer(audioPath);
-                    player.Load();
-                    player.PlaySync(); // Play synchronously
+                    using (SoundPlayer player = new SoundPlayer(audioPath))
+                    {
+                        player.Load();
+                        player.PlaySync();
+                    }
                 }
                 else
                 {
@@ -62,7 +70,8 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Displays cybersecurity-themed ASCII art banner
+        /// Displays a cybersecurity-themed ASCII art banner with colored output.
+        /// The art serves as a visual header for the chatbot interface.
         /// </summary>
         static void DisplayAsciiArt()
         {
@@ -70,33 +79,12 @@ namespace cybersecurity_chatbot_csharp
             {
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
                 Console.WriteLine(@"
-+-------------------------------------------------------------------------------------+
-|                                                                                     |
-|    ____ __      __ ______    _____ ______    _____   _____  ____ __    __ ______    |
-|   / ___)) \    / ((_   _ \  / ___/(   __ \  / ____\ / ___/ / ___)) )  ( ((   __ \   |
-|  / /     \ \  / /   ) (_) )( (__   ) (__) )( (___  ( (__  / /   ( (    ) )) (__) )  |
-| ( (       \ \/ /    \   _/  ) __) (    __/  \___ \  ) __)( (     ) )  ( ((    __/   |
-| ( (        \  /     /  _ \ ( (     ) \ \  _     ) )( (   ( (    ( (    ) )) \ \  _  |
-|  \ \___     )(     _) (_) ) \ \___( ( \ \_))___/ /  \ \___\ \___ ) \__/ (( ( \ \_)) |
-|   \____)   /__\   (______/   \____\)_) \__//____/    \____\\____)\______/ )_) \__/  |
-|                                                                                     |
-|   _____  ________ __      __                                                        |
-|  (_   _)(___  ___)) \    / (                                                        |
-|    | |      ) )    \ \  / /                                                         |
-|    | |     ( (      \ \/ /                                                          |
-|    | |      ) )      \  /                                                           |
-|   _| |__   ( (        )(                                                            |
-|  /_____(   /__\      /__\                                                           |
-|                                                                                     |
-|    ____  __    __   ____  ________  ______    ____  ________                        |
-|   / ___)(  \  /  ) (    )(___  ___)(_   _ \  / __ \(___  ___)                       |
-|  / /     \ (__) /  / /\ \    ) )     ) (_) )/ /  \ \   ) )                          |
-| ( (       ) __ (  ( (__) )  ( (      \   _/( ()  () ) ( (                           |
-| ( (      ( (  ) )  )    (    ) )     /  _ \( ()  () )  ) )                          |
-|  \ \___   ) )( (  /  /\  \  ( (     _) (_) )\ \__/ /  ( (                           |
-|   \____) /_/  \_\/__(  )__\ /__\   (______/  \____/   /__\                          |
-|                                                                                     |
-+-------------------------------------------------------------------------------------+
+                ██████╗ ██╗   ██╗███████╗██████╗ ███████╗ ██████╗ ██╗   ██╗███████╗
+                ██╔══██╗╚██╗ ██╔╝██╔════╝██╔══██╗██╔════╝██╔═══██╗██║   ██║██╔════╝
+                ██████╔╝ ╚████╔╝ █████╗  ██████╔╝███████╗██║   ██║██║   ██║█████╗  
+                ██╔══██╗  ╚██╔╝  ██╔══╝  ██╔══██╗╚════██║██║▄▄ ██║██║   ██║██╔══╝  
+                ██████╔╝   ██║   ███████╗██║  ██║███████║╚██████╔╝╚██████╔╝███████╗
+                ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝╚══════╝ ╚══▀▀═╝  ╚═════╝ ╚══════╝
                 ");
                 Console.ResetColor();
             }
@@ -109,41 +97,65 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Prompts user for their name and validates input
+        /// Collects and validates user's name through console input.
+        /// Validates that name contains only English alphabet characters and spaces.
+        /// Implements strict input validation to ensure proper formatting.
+        /// Provides default value if input fails validation after multiple attempts.
         /// </summary>
-        /// <returns>The validated user name</returns>
+        /// <returns>Validated user name as string</returns>
         static string GetUserName()
         {
-            try
+            const int maxAttempts = 7;
+            int attempts = 0;
+
+            while (attempts < maxAttempts)
             {
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
-                Console.Write("Enter your name: ");
-                Console.ResetColor();
+                try
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    Console.Write("Enter your name: ");
+                    Console.ResetColor();
 
-                string userName = Console.ReadLine();
+                    string userName = Console.ReadLine();
 
-                // Validate input is not empty
-                while (string.IsNullOrWhiteSpace(userName))
+                    if (string.IsNullOrWhiteSpace(userName))
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Name cannot be empty. Please try again.");
+                        Console.ResetColor();
+                        attempts++;
+                        continue;
+                    }
+
+                    if (userName.Any(c => !char.IsLetter(c) && !char.IsWhiteSpace(c)))
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Invalid characters detected. Only letters and spaces are allowed.");
+                        Console.ResetColor();
+                        attempts++;
+                        continue;
+                    }
+
+                    return userName.Trim();
+                }
+                catch (Exception ex)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Name cannot be empty. Please enter your name:");
+                    Console.WriteLine($"Error getting user name: {ex.Message}");
                     Console.ResetColor();
-                    userName = Console.ReadLine();
+                    attempts++;
                 }
+            }
 
-                return userName;
-            }
-            catch (Exception ex)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine($"Error getting user name: {ex.Message}");
-                Console.ResetColor();
-                return "User"; // Default name if error occurs
-            }
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("Maximum attempts reached. Using default name 'User'.");
+            Console.ResetColor();
+            return "User";
         }
 
         /// <summary>
-        /// Displays personalized welcome message
+        /// Displays personalized welcome message with formatted borders.
+        /// Incorporates the user's name for personalized greeting.
         /// </summary>
         /// <param name="userName">The name to include in welcome message</param>
         static void DisplayWelcomeMessage(string userName)
@@ -166,103 +178,79 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Types out text character by character with a delay for effect
+        /// Simulates typing effect by printing text with character-by-character delay.
+        /// Creates more natural conversation flow and improves readability.
         /// </summary>
         /// <param name="text">Text to display</param>
-        /// <param name="delay">Delay between characters in milliseconds</param>
+        /// <param name="delay">Milliseconds delay between characters (default: 30ms)</param>
         static void TypeText(string text, int delay = 30)
         {
             foreach (char c in text)
             {
                 Console.Write(c);
-                Thread.Sleep(delay); // Pause between characters
+                Thread.Sleep(delay);
             }
             Console.WriteLine();
         }
 
         /// <summary>
-        /// Main chat loop that processes user input and provides responses
+        /// Initializes and maintains the main chat conversation loop.
+        /// Handles user input, processes commands, and manages conversation flow.
+        /// Implements exit command and help functionality.
         /// </summary>
-        /// <param name="userName">Name of user for personalized responses</param>
+        /// <param name="userName">User's name for personalized interaction</param>
         static void StartChat(string userName)
         {
             try
             {
-                // Expanded cybersecurity knowledge base - maps keywords to responses
-                Dictionary<string, string> responses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                // Comprehensive knowledge base of cybersecurity topics
+                var responses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    // General questions
+                    // General conversation
                     { "how are you", "I'm doing great, thanks for asking! Ready to discuss cybersecurity?" },
                     { "purpose", "My purpose is to educate you about cybersecurity best practices and help you stay safe online." },
                     { "help", "I can help with: Passwords, 2FA, phishing, VPNs, public Wi-Fi, HTTPS, and email security. Just ask!" },
 
                     // Password Security
-                    { "password",
-                    "Use at least 12 characters (longer is better). Combine uppercase, lowercase, numbers and special characters. Avoid dictionary words or personal information. Use unique passwords for each account. Consider a password manager to generate/store passwords securely."
-                    },
+                    { "password", "Use at least 12 characters (longer is better). Combine uppercase, lowercase, numbers and special characters. Avoid dictionary words or personal information. Use unique passwords for each account. Consider a password manager to generate/store passwords securely." },
 
                     // Two-Factor Authentication
-                    { "2fa",
-                    "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts."
-                    },
-                    { "authentication",
-                    "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts."
-                    },
-                    { "two factor",
-                    "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts."
-                    },
+                    { "2fa", "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts." },
+                    { "authentication", "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts." },
+                    { "two factor", "Adds an extra security layer beyond just passwords. Types include SMS codes, authenticator apps, and hardware tokens. Authenticator apps (Google/Microsoft Authenticator) are more secure than SMS. Backup codes should be stored securely. Required for all financial and sensitive accounts." },
 
                     // Phishing Awareness
-                    { "phishing",
-                    "Never click links or download attachments from unexpected emails. Check sender addresses carefully for slight misspellings. Hover over links to preview the actual URL before clicking. Legitimate organizations won't ask for sensitive info via email. Report suspicious emails to your IT department or email provider."
-                    },
+                    { "phishing", "Never click links or download attachments from unexpected emails. Check sender addresses carefully for slight misspellings. Hover over links to preview the actual URL before clicking. Legitimate organizations won't ask for sensitive info via email. Report suspicious emails to your IT department or email provider." },
                     { "spear phishing", "Spear phishing targets specific individuals with personalized messages. Always verify unusual requests through another channel." },
                     
                     // VPN Usage
-                    { "vpn",
-                    "Encrypts all internet traffic between your device and the VPN server. Essential when using public Wi-Fi networks. Choose a reputable VPN provider with a no-logs policy. Can help bypass geo-restrictions but choose servers carefully. Doesn't make you completely anonymous - other tracking methods exist."
-                    },
+                    { "vpn", "Encrypts all internet traffic between your device and the VPN server. Essential when using public Wi-Fi networks. Choose a reputable VPN provider with a no-logs policy. Can help bypass geo-restrictions but choose servers carefully. Doesn't make you completely anonymous - other tracking methods exist." },
 
                     // Public Wi-Fi Safety
-                    { "public wi-fi",
-                    "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection."
-                    },
-                    { "wi-fi",
-                    "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection."
-                    },
-                    { "wifi",
-                    "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection."
-                    },
+                    { "public wi-fi", "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection." },
+                    { "wi-fi", "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection." },
+                    { "wifi", "Assume all public Wi-Fi networks are potentially insecure. Never access banking or sensitive accounts without VPN. Disable file sharing and enable firewall. Use cellular data instead when possible for sensitive activities. Forget the network after use to prevent automatic reconnection." },
 
                     // HTTPS Security
-                    { "https",
-                    "Look for padlock icon in browser address bar. Indicates encrypted connection between browser and website. Doesn't guarantee the website itself is legitimate. Important for all login pages and form submissions. Consider HTTPS Everywhere browser extension for forced encryption."
-                    },
+                    { "https", "Look for padlock icon in browser address bar. Indicates encrypted connection between browser and website. Doesn't guarantee the website itself is legitimate. Important for all login pages and form submissions. Consider HTTPS Everywhere browser extension for forced encryption." },
 
                     // Email Security
-                    { "email",
-                    "Enable spam filters at maximum setting. Be wary of urgent requests for information or money transfers. Don't open unexpected attachments (even from known contacts). Verify unusual requests via another communication channel. Regularly review and clean up old emails containing sensitive information."
-                    },
-                    { "scam",
-                    "Enable spam filters at maximum setting. Be wary of urgent requests for information or money transfers. Don't open unexpected attachments (even from known contacts). Verify unusual requests via another communication channel. Regularly review and clean up old emails containing sensitive information."
-                    },
+                    { "email", "Enable spam filters at maximum setting. Be wary of urgent requests for information or money transfers. Don't open unexpected attachments (even from known contacts). Verify unusual requests via another communication channel. Regularly review and clean up old emails containing sensitive information." },
+                    { "scam", "Enable spam filters at maximum setting. Be wary of urgent requests for information or money transfers. Don't open unexpected attachments (even from known contacts). Verify unusual requests via another communication channel. Regularly review and clean up old emails containing sensitive information." }
                 };
 
-                // Display initial instructions
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 TypeText("Type 'help' to see topics I can discuss or 'exit' to quit.", 30);
                 Console.ResetColor();
 
-                // Main chat loop
                 while (true)
                 {
-                    Console.ForegroundColor = ConsoleColor.DarkCyan;
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
                     Console.Write($"{userName}: ");
                     Console.ResetColor();
 
                     string userInput = Console.ReadLine()?.Trim();
 
-                    // Handle empty input
                     if (string.IsNullOrWhiteSpace(userInput))
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
@@ -271,46 +259,77 @@ namespace cybersecurity_chatbot_csharp
                         continue;
                     }
 
-                    // Check for exit command
                     if (userInput.Equals("exit", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Console.ForegroundColor = ConsoleColor.Magenta;
-                        TypeText("ChatBot: Goodbye! Remember to practice good cybersecurity habits!", 30);
-                        Console.ResetColor();
-                        break;
-                    }
-
-                    // Search for matching response in knowledge base
-                    bool responseFound = false;
-                    foreach (var keyword in responses.Keys)
-                    {
-                        if (userInput.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            Console.ForegroundColor = ConsoleColor.DarkCyan;
-                            Console.Write("ChatBot: ");
-                            Console.ForegroundColor = ConsoleColor.Magenta;
-                            TypeText(responses[keyword], 30);
-                            Console.ResetColor();
-                            responseFound = true;
-                            break;
-                        }
-                    }
-
-                    // Handle unknown topics
-                    if (!responseFound)
                     {
                         Console.ForegroundColor = ConsoleColor.DarkCyan;
                         Console.Write("ChatBot: ");
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        TypeText("I'm not sure about that topic. Try asking about: passwords, 2FA, phishing, VPNs, or email security.", 30);
                         Console.ResetColor();
+                        TypeText("Goodbye! Remember to practice good cybersecurity habits!", 30);
+                        break;
                     }
+
+                    if (userInput.Equals("help", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkCyan;
+                        Console.Write("ChatBot: ");
+                        Console.ForegroundColor = ConsoleColor.Magenta;
+                        TypeText(responses["help"], 30);
+                        Console.ResetColor();
+                        continue;
+                    }
+
+                    ProcessUserInput(userInput, responses);
                 }
             }
             catch (Exception ex)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Error in chatbot: {ex.Message}");
+                Console.ResetColor();
+            }
+        }
+
+        /// <summary>
+        /// Processes user input to identify and respond to all cybersecurity keywords.
+        /// Implements ordered response generation based on keyword appearance in input.
+        /// Handles cases where no recognized keywords are found.
+        /// </summary>
+        /// <param name="userInput">Raw user input string</param>
+        /// <param name="responses">Knowledge base dictionary</param>
+        static void ProcessUserInput(string userInput, Dictionary<string, string> responses)
+        {
+            // Find all matching keywords in order of appearance
+            var matchedKeywords = responses.Keys
+                .Where(keyword => userInput.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                .OrderBy(keyword => userInput.IndexOf(keyword, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (matchedKeywords.Count > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.Write("ChatBot: ");
+                Console.ForegroundColor = ConsoleColor.Magenta;
+
+                bool isFirstResponse = true;
+                foreach (string keyword in matchedKeywords)
+                {
+                    if (!isFirstResponse)
+                    {
+                        Console.WriteLine();
+                    }
+
+                    TypeText($"About {keyword} >> {responses[keyword]}", 30);
+                    isFirstResponse = false;
+                }
+
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.Write("ChatBot: ");
+                Console.ForegroundColor = ConsoleColor.Red;
+                TypeText("I'm not sure about that topic. Try asking about: passwords, 2FA, phishing, VPNs, or email security.", 30);
                 Console.ResetColor();
             }
         }
