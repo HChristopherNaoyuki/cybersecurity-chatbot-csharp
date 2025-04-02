@@ -406,7 +406,7 @@ namespace cybersecurity_chatbot_csharp
                 // General conversation responses
                 { "how are you", "I'm functioning optimally! Ready to discuss cybersecurity." },
                 { "purpose", "I provide cybersecurity education to help you stay safe online." },
-                { "help", "I can explain: Passwords, 2FA, phishing, VPNs, Wi-Fi security, HTTPS, email safety" },
+                { "help", "I can explain: Passwords, 2FA, phishing, VPNs, Wi-Fi security, email safety" },
 
                 // Password security responses
                 { "password", "Strong passwords should:\n- Be 12+ characters\n- Mix character types\n- Avoid personal info\n- Be unique per account\n- Use a password manager" },
@@ -447,14 +447,6 @@ namespace cybersecurity_chatbot_csharp
                 TypeText("Stay safe online! Goodbye.", 30);
                 Console.ResetColor();
                 return true;
-            }
-
-            // Check for help command
-            if (input.Equals("help", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.ForegroundColor = ConsoleColor.DarkCyan;
-                TypeText(responses["help"], 30);
-                Console.ResetColor();
             }
 
             return false;
