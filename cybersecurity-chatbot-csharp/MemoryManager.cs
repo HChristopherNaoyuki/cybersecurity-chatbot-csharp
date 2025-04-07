@@ -5,16 +5,13 @@ namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
     /// Handles memory and recall functionality for the cybersecurity chatbot
-    /// Specifically implements requirements from page 10 of the specification
+    /// Implements all required methods from the specification
     /// </summary>
     public class MemoryManager
     {
-        // Stores user-provided information
         private string userName;
-        private string primaryInterest;
+        private string userInterest;
         private DateTime interestTimestamp;
-
-        // Stores conversation context
         private readonly ArrayList conversationContext;
 
         public MemoryManager()
@@ -23,7 +20,7 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Stores the user's name with validation
+        /// Gets or sets the user's name with validation
         /// </summary>
         public string UserName
         {
@@ -32,30 +29,30 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Records a user's cybersecurity interest based on specification example
+        /// Gets the user's current interest topic
         /// </summary>
-        public void RecordInterest(string topic)
+        public string UserInterest => userInterest;
+
+        /// <summary>
+        /// Checks if the user has an active interest
+        /// </summary>
+        public bool HasInterest()
         {
-            if (!string.IsNullOrWhiteSpace(topic))
-            {
-                primaryInterest = topic.ToLower().Trim();
-                interestTimestamp = DateTime.Now;
-                AddContext($"User expressed interest in {primaryInterest}");
-            }
+            return !string.IsNullOrEmpty(userInterest) &&
+                   (DateTime.Now - interestTimestamp).TotalMinutes <= 30;
         }
 
         /// <summary>
-        /// Gets the user's primary interest if recently mentioned
+        /// Records a user's cybersecurity interest (implements specification requirement)
         /// </summary>
-        public string GetActiveInterest()
+        public void RememberInterest(string topic)
         {
-            // Interest expires after 30 minutes of conversation
-            if (primaryInterest != null &&
-                (DateTime.Now - interestTimestamp).TotalMinutes <= 30)
+            if (!string.IsNullOrWhiteSpace(topic))
             {
-                return primaryInterest;
+                userInterest = topic.ToLower().Trim();
+                interestTimestamp = DateTime.Now;
+                AddContext($"User expressed interest in {userInterest}");
             }
-            return null;
         }
 
         /// <summary>
@@ -63,13 +60,9 @@ namespace cybersecurity_chatbot_csharp
         /// </summary>
         public string GetPersonalizedResponse(string baseResponse)
         {
-            string interest = GetActiveInterest();
-
-            if (interest != null)
-            {
-                return $"As someone interested in {interest}, {baseResponse}";
-            }
-            return baseResponse;
+            return HasInterest()
+                ? $"As someone interested in {userInterest}, {baseResponse}"
+                : baseResponse;
         }
 
         /// <summary>
