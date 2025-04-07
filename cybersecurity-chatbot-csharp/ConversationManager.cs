@@ -367,7 +367,7 @@ namespace cybersecurity_chatbot_csharp
                     ui.TypeText($"{topic[0]?.ToUpper()} >> {topic[1]}", 20);
                 }
             }
-
+            // Reset color after displaying response
             Console.ResetColor();
         }
     }
