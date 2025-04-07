@@ -1,73 +1,101 @@
-# Cybersecurity Chatbot CI Pipeline
-# This workflow builds and tests the .NET application on Windows
-name: .NET Core Build and Test
+name: Cybersecurity Chatbot CI Pipeline
 
-# Trigger workflow on pushes and pull requests to main/master branches
 on:
   push:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
 
+env:
+  DOTNET_VERSION: '8.0.x'
+  BUILD_CONFIGURATION: 'Release'
+  ARTIFACT_RETENTION_DAYS: 3
+
 jobs:
-  # Single job that handles building and testing
-  build-and-test:
-    # Windows runner required for .NET applications
+  build-test-and-analyze:
+    name: Build, Test & Analyze
     runs-on: windows-latest
+    timeout-minutes: 15
 
     steps:
     # ----------------------------------
-    # 1. Checkout the repository code
+    # 1. Checkout code with full history
     # ----------------------------------
-    - name: Checkout code
-      uses: actions/checkout@v4  # Official GitHub Action for code checkout
-      # Uses the latest stable version (v4)
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Get complete history for version info
 
     # ----------------------------------
-    # 2. Setup .NET 8 SDK
+    # 2. Setup .NET with caching
     # ----------------------------------
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'  # Installs latest patch of .NET 8
-        # Note: Using x in version gets latest patch updates
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~\.nuget\packages
+          **\bin
+          **\obj
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
 
     # ----------------------------------
-    # 3. Restore NuGet dependencies
+    # 3. Build with security analysis
     # ----------------------------------
-    - name: Restore dependencies
-      run: dotnet restore
-      # Restores all NuGet packages for the solution
-      # Runs against all projects in the solution by default
+    - name: Build with security checks
+      run: |
+        dotnet restore
+        dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --warnaserror
+        dotnet list package --vulnerable
+      shell: pwsh
 
     # ----------------------------------
-    # 4. Build the solution in Release mode
+    # 4. Run tests with coverage
     # ----------------------------------
-    - name: Build solution
-      run: dotnet build --configuration Release --no-restore
-      # Flags:
-      # --configuration Release: Production-optimized build
-      # --no-restore: Skip redundant package restoration
-      # Outputs binaries to bin/Release/net8.0 directory
+    - name: Run unit tests
+      run: |
+        dotnet test --configuration ${{ env.BUILD_CONFIGURATION }} \
+          --collect:"XPlat Code Coverage" \
+          --logger trx \
+          --results-directory ./TestResults
+      shell: pwsh
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: ./TestResults/**/*.trx
+        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
 
     # ----------------------------------
-    # 5. Run unit tests
+    # 5. Code quality analysis
     # ----------------------------------
-    - name: Run tests
-      run: dotnet test --configuration Release --no-build --verbosity normal
-      # Flags:
-      # --no-build: Uses existing build output
-      # --verbosity normal: Shows standard test output
-      # Executes all unit tests in the solution
+    - name: Run SonarCloud analysis
+      if: github.event_name == 'pull_request'
+      uses: SonarSource/sonarcloud-github-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     # ----------------------------------
-    # 6. Archive build outputs (optional)
+    # 6. Package and archive artifacts
     # ----------------------------------
-    - name: Upload build artifacts
+    - name: Create deployment package
+      run: |
+        dotnet publish -c ${{ env.BUILD_CONFIGURATION }} -o ./publish --no-self-contained
+        Compress-Archive -Path ./publish/* -DestinationPath ./cybersecurity-chatbot.zip
+      shell: pwsh
+
+    - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
-        name: build-output
-        path: |
-          **/bin/Release/net8.0/**
-          !**/bin/Release/net8.0/*.pdb  # Exclude debug symbols
-        retention-days: 3  # Short retention period to save storage
+        name: cybersecurity-chatbot
+        path: ./cybersecurity-chatbot.zip
+        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
