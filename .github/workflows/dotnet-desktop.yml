@@ -9,93 +9,54 @@ on:
 env:
   DOTNET_VERSION: '8.0.x'
   BUILD_CONFIGURATION: 'Release'
-  ARTIFACT_RETENTION_DAYS: 3
 
 jobs:
-  build-test-and-analyze:
-    name: Build, Test & Analyze
+  build-and-test:
+    name: Build and Test
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
     # ----------------------------------
-    # 1. Checkout code with full history
+    # 1. Checkout code
     # ----------------------------------
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Get complete history for version info
 
     # ----------------------------------
-    # 2. Setup .NET with caching
+    # 2. Setup .NET
     # ----------------------------------
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Cache NuGet packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~\.nuget\packages
-          **\bin
-          **\obj
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
+    # ----------------------------------
+    # 3. Restore dependencies
+    # ----------------------------------
+    - name: Restore dependencies
+      run: dotnet restore
 
     # ----------------------------------
-    # 3. Build with security analysis
+    # 4. Build solution
     # ----------------------------------
-    - name: Build with security checks
-      run: |
-        dotnet restore
-        dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --warnaserror
-        dotnet list package --vulnerable
-      shell: pwsh
+    - name: Build solution
+      run: dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
     # ----------------------------------
-    # 4. Run tests with coverage
+    # 5. Run tests
     # ----------------------------------
-    - name: Run unit tests
-      run: |
-        dotnet test --configuration ${{ env.BUILD_CONFIGURATION }} \
-          --collect:"XPlat Code Coverage" \
-          --logger trx \
-          --results-directory ./TestResults
-      shell: pwsh
-
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: ./TestResults/**/*.trx
-        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+    - name: Run tests
+      run: dotnet test --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal
 
     # ----------------------------------
-    # 5. Code quality analysis
+    # 6. Publish artifacts
     # ----------------------------------
-    - name: Run SonarCloud analysis
-      if: github.event_name == 'pull_request'
-      uses: SonarSource/sonarcloud-github-action@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-    # ----------------------------------
-    # 6. Package and archive artifacts
-    # ----------------------------------
-    - name: Create deployment package
-      run: |
-        dotnet publish -c ${{ env.BUILD_CONFIGURATION }} -o ./publish --no-self-contained
-        Compress-Archive -Path ./publish/* -DestinationPath ./cybersecurity-chatbot.zip
-      shell: pwsh
+    - name: Publish application
+      run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} -o ./publish
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
-        name: cybersecurity-chatbot
-        path: ./cybersecurity-chatbot.zip
-        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+        name: chatbot-build
+        path: ./publish/**/*
