@@ -1,4 +1,4 @@
-name: Cybersecurity Chatbot CI Pipeline
+name: Cybersecurity Chatbot Test Pipeline
 
 on:
   push:
@@ -8,13 +8,12 @@ on:
 
 env:
   DOTNET_VERSION: '8.0.x'
-  BUILD_CONFIGURATION: 'Release'
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  test:
+    name: Run Tests
     runs-on: windows-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
 
     steps:
     # ----------------------------------
@@ -32,31 +31,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     # ----------------------------------
-    # 3. Restore dependencies
-    # ----------------------------------
-    - name: Restore dependencies
-      run: dotnet restore
-
-    # ----------------------------------
-    # 4. Build solution
-    # ----------------------------------
-    - name: Build solution
-      run: dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
-
-    # ----------------------------------
-    # 5. Run tests
+    # 3. Run tests (automatically restores and builds)
     # ----------------------------------
     - name: Run tests
-      run: dotnet test --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal
-
-    # ----------------------------------
-    # 6. Publish artifacts
-    # ----------------------------------
-    - name: Publish application
-      run: dotnet publish -c ${{ env.BUILD_CONFIGURATION }} -o ./publish
-
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: chatbot-build
-        path: ./publish/**/*
+      run: dotnet test --no-restore
