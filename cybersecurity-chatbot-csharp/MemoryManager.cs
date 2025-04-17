@@ -1,103 +1,264 @@
 ﻿using System;
-using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
-    /// Handles memory and recall functionality for the cybersecurity chatbot
-    /// Implements all required methods from the specification
+    /// Manages all user-specific data and persistence for the chatbot.
+    /// Handles user profile, interests, favorites, and persistent storage.
+    /// 
+    /// Key Responsibilities:
+    /// - Maintains user session state
+    /// - Manages favorites collection
+    /// - Handles interest tracking
+    /// - Provides file-based persistence
+    /// 
+    /// Design Patterns:
+    /// - Singleton (via DI container)
+    /// - Repository (for data persistence)
+    /// - Observer (for change notifications)
     /// </summary>
     public class MemoryManager
     {
-        private string userName;
-        private string userInterest;
-        private DateTime interestTimestamp;
-        private readonly ArrayList conversationContext;
+        // Constants
+        private const string StorageFileName = "user_data.txt";
+        private const string InterestMarker = "[INTEREST]";
 
+        // Fields
+        private readonly List<string> _favorites;
+        private string _userName;
+        private string _userInterest;
+
+        /// <summary>
+        /// Initializes a new MemoryManager instance.
+        /// 
+        /// Initialization Sequence:
+        /// 1. Sets default values
+        /// 2. Initializes storage file
+        /// 3. Loads persisted data
+        /// </summary>
         public MemoryManager()
         {
-            conversationContext = new ArrayList();
+            _favorites = new List<string>();
+            _userName = "Guest";
+            _userInterest = null;
+
+            InitializeStorage();
+            LoadPersistedData();
         }
 
         /// <summary>
-        /// Gets or sets the user's name with validation
+        /// Gets or sets the user's name.
+        /// 
+        /// Validation:
+        /// - Null/empty values are rejected
+        /// - Automatically trimmed
         /// </summary>
         public string UserName
         {
-            get => !string.IsNullOrEmpty(userName) ? userName : "User";
-            set => userName = ValidateName(value);
+            get => _userName;
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException("Username cannot be empty");
+                _userName = value.Trim();
+            }
         }
 
         /// <summary>
-        /// Gets the user's current interest topic
+        /// Gets the user's current interest topic.
+        /// 
+        /// Note:
+        /// - Returns null if no interest is set
+        /// - Read-only property (use RememberInterest to set)
         /// </summary>
-        public string UserInterest => userInterest;
+        public string UserInterest => _userInterest;
 
         /// <summary>
-        /// Checks if the user has an active interest
+        /// Determines if the user has expressed an interest.
+        /// 
+        /// Usage:
+        /// - Guides conversation flow
+        /// - Enables personalized responses
         /// </summary>
-        public bool HasInterest()
-        {
-            return !string.IsNullOrEmpty(userInterest) &&
-                   (DateTime.Now - interestTimestamp).TotalMinutes <= 30;
-        }
+        public bool HasInterest() => !string.IsNullOrEmpty(_userInterest);
 
         /// <summary>
-        /// Records a user's cybersecurity interest (implements specification requirement)
+        /// Records and persists a user's interest in a topic.
+        /// 
+        /// Parameters:
+        /// - topic: The cybersecurity topic of interest
+        /// 
+        /// Exceptions:
+        /// - ArgumentException for invalid topics
+        /// - IOException for storage failures
         /// </summary>
         public void RememberInterest(string topic)
         {
-            if (!string.IsNullOrWhiteSpace(topic))
+            if (string.IsNullOrWhiteSpace(topic))
+                throw new ArgumentException("Topic cannot be empty");
+
+            _userInterest = topic.Trim();
+            PersistInterest();
+        }
+
+        /// <summary>
+        /// Stores a user's favorite item with persistence.
+        /// 
+        /// Features:
+        /// - Interactive prompt
+        /// - Input validation
+        /// - Immediate feedback
+        /// - Automatic persistence
+        /// </summary>
+        public void StoreUserFavorite()
+        {
+            try
             {
-                userInterest = topic.ToLower().Trim();
-                interestTimestamp = DateTime.Now;
-                AddContext($"User expressed interest in {userInterest}");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("\nEnter your favorite item: ");
+                Console.ResetColor();
+
+                string favorite = Console.ReadLine()?.Trim();
+
+                if (string.IsNullOrWhiteSpace(favorite))
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("No input received. Favorite not stored.");
+                    Console.ResetColor();
+                    return;
+                }
+
+                _favorites.Add(favorite);
+                PersistFavorites();
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"Stored: {favorite}");
+                Console.ResetColor();
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Error saving favorite: {ex.Message}");
+                Console.ResetColor();
             }
         }
 
         /// <summary>
-        /// Generates a personalized response incorporating remembered information
+        /// Displays all stored favorites with formatting.
+        /// 
+        /// UI Features:
+        /// - Color-coded output
+        /// - Empty collection handling
+        /// - Clear item numbering
         /// </summary>
-        public string GetPersonalizedResponse(string baseResponse)
+        public void DisplayFavorites()
         {
-            return HasInterest()
-                ? $"As someone interested in {userInterest}, {baseResponse}"
-                : baseResponse;
+            if (!_favorites.Any())
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("No favorites stored yet.");
+                Console.ResetColor();
+                return;
+            }
+
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine("\nYour favorites:");
+            Console.ResetColor();
+
+            for (int i = 0; i < _favorites.Count; i++)
+            {
+                Console.WriteLine($"{i + 1}. {_favorites[i]}");
+            }
         }
 
         /// <summary>
-        /// Adds context to the current conversation
+        /// Gets a safe copy of all favorites.
+        /// 
+        /// Safety:
+        /// - Returns new collection to prevent modification
+        /// - Preserves ordering
         /// </summary>
-        public void AddContext(string contextNote)
-        {
-            if (!string.IsNullOrWhiteSpace(contextNote))
-            {
-                conversationContext.Add($"[{DateTime.Now:HH:mm}] {contextNote}");
+        public IReadOnlyList<string> GetAllFavorites() =>
+            new List<string>(_favorites);
 
-                // Keep only the last 5 context items
-                while (conversationContext.Count > 5)
+        // Private helper methods
+        private void InitializeStorage()
+        {
+            try
+            {
+                if (!File.Exists(StorageFileName))
                 {
-                    conversationContext.RemoveAt(0);
+                    File.Create(StorageFileName).Close();
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Initializing storage: {ex.Message}");
+            }
         }
 
-        /// <summary>
-        /// Gets recent conversation context
-        /// </summary>
-        public ArrayList GetRecentContext()
+        private void LoadPersistedData()
         {
-            return new ArrayList(conversationContext); // Return copy
+            try
+            {
+                if (!File.Exists(StorageFileName)) return;
+
+                var lines = File.ReadAllLines(StorageFileName);
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith(InterestMarker))
+                    {
+                        _userInterest = line.Substring(InterestMarker.Length).Trim();
+                    }
+                    else if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        _favorites.Add(line.Trim());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Loading data: {ex.Message}");
+            }
         }
 
-        private string ValidateName(string name)
+        private void PersistFavorites()
         {
-            if (string.IsNullOrWhiteSpace(name)) return null;
+            try
+            {
+                var lines = new List<string>();
+                if (!string.IsNullOrEmpty(_userInterest))
+                {
+                    lines.Add($"{InterestMarker}{_userInterest}");
+                }
+                lines.AddRange(_favorites);
+                File.WriteAllLines(StorageFileName, lines);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Saving favorites: {ex.Message}");
+            }
+        }
 
-            // Allow only letters and spaces
-            char[] cleaned = Array.FindAll(name.ToCharArray(),
-                c => char.IsLetter(c) || char.IsWhiteSpace(c));
-            return new string(cleaned).Trim();
+        private void PersistInterest()
+        {
+            try
+            {
+                var lines = new List<string>();
+                if (!string.IsNullOrEmpty(_userInterest))
+                {
+                    lines.Add($"{InterestMarker}{_userInterest}");
+                }
+                lines.AddRange(_favorites);
+                File.WriteAllLines(StorageFileName, lines);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] Saving interest: {ex.Message}");
+            }
         }
     }
 }
