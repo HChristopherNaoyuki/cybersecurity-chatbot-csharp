@@ -65,7 +65,7 @@ namespace cybersecurity_chatbot_csharp
                 var imageBasePath = AppDomain.CurrentDomain.BaseDirectory;
 
                 // Construct path to image file
-                string imageRelativePath = Path.Combine("Images", "cybersecurity.jpg");
+                string imageRelativePath = Path.Combine("Images", "cybersecurity.png");
                 string imagePath = Path.GetFullPath(Path.Combine(imageBasePath, imageRelativePath));
 
                 // Verify image exists

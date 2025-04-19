@@ -56,8 +56,12 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="bin\" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="Audio\welcome.wav" />
-    <Content Include="bin\Images\cybersecurity.jpg" />
+    <Content Include="Images\cybersecurity.jpg" />
+    <Content Include="Images\cybersecurity.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
