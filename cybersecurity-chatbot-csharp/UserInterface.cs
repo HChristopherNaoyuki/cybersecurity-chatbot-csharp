@@ -1,46 +1,49 @@
 ﻿using System;
-using System.Media;
-using System.IO;
-using System.Threading;
 using System.Drawing;
-using System.Text;
+using System.IO;
 using System.Linq;
+using System.Media;
+using System.Text;
+using System.Threading;
 
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
-    /// Handles all user interface components including:
+    /// Handles all user interface components and multimedia presentation.
+    /// Implements the Facade pattern to simplify complex UI operations.
+    /// 
+    /// Key Responsibilities:
     /// - Audio playback
     /// - ASCII art generation
-    /// - Console formatting and display
+    /// - Console formatting
     /// - User input collection
+    /// - Text display with effects
+    /// 
+    /// Design Patterns:
+    /// - Facade: Simplifies complex UI operations
+    /// - Builder: Constructs ASCII art output
+    /// - Decorator: Adds visual effects to text
     /// </summary>
     public class UserInterface
     {
-        // ASCII character gradient from darkest to lightest
-        private static readonly char[] asciiChars = { '#', '8', '&', 'o', ':', '*', '.', ' ' };
+        private static readonly char[] AsciiChars = { '#', '8', '&', 'o', ':', '*', '.', ' ' };
 
         /// <summary>
-        /// Plays the welcome audio greeting in WAV format
+        /// Plays the welcome audio greeting in WAV format.
+        /// Implements the Dispose pattern for resource management.
         /// </summary>
         public void PlayVoiceGreeting()
         {
             try
             {
-                // Get application base directory
-                var basePath = AppDomain.CurrentDomain.BaseDirectory;
+                string audioPath = GetResourcePath("Audio", "welcome.wav");
 
-                // Construct path to audio file
-                string relativePath = Path.Combine("Audio", "welcome.wav");
-                string audioPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
-
-                // Verify and play audio file
                 if (File.Exists(audioPath))
                 {
                     using (SoundPlayer player = new SoundPlayer(audioPath))
                     {
                         player.Load();  // Pre-load for smooth playback
-                        player.PlaySync();  // Play synchronously
+                        player.PlaySync();
                     }
                 }
                 else
@@ -55,27 +58,21 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Generates and displays ASCII art from an image file
+        /// Generates and displays ASCII art from an image file.
+        /// Implements the Builder pattern for ASCII art construction.
         /// </summary>
         public void DisplayAsciiArt()
         {
             try
             {
-                // Get application base directory
-                var imageBasePath = AppDomain.CurrentDomain.BaseDirectory;
+                string imagePath = GetResourcePath("Images", "cybersecurity.png");
 
-                // Construct path to image file
-                string imageRelativePath = Path.Combine("Images", "cybersecurity.png");
-                string imagePath = Path.GetFullPath(Path.Combine(imageBasePath, imageRelativePath));
-
-                // Verify image exists
                 if (!File.Exists(imagePath))
                 {
                     DisplayError($"ASCII art image not found at: {imagePath}");
                     return;
                 }
 
-                // Generate and display ASCII art
                 string asciiArt = ConvertImageToAscii(imagePath, 100, 50);
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
                 Console.WriteLine(asciiArt);
@@ -88,26 +85,24 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Collects and validates the user's name through console input
+        /// Collects and validates the user's name through console input.
+        /// Implements the Retry pattern for input validation.
         /// </summary>
-        /// <returns>Validated user name</returns>
         public string GetUserName()
         {
-            const int maxAttempts = 7;
+            const int maxAttempts = 3;
             int attempts = 0;
 
             while (attempts < maxAttempts)
             {
                 try
                 {
-                    // Prompt for input
                     Console.ForegroundColor = ConsoleColor.DarkCyan;
                     Console.Write("Enter your name: ");
                     Console.ResetColor();
 
-                    string userName = Console.ReadLine();
+                    string userName = Console.ReadLine()?.Trim();
 
-                    // Validate input
                     if (string.IsNullOrWhiteSpace(userName))
                     {
                         throw new ArgumentException("Name cannot be empty.");
@@ -118,7 +113,7 @@ namespace cybersecurity_chatbot_csharp
                         throw new ArgumentException("Only letters and spaces allowed");
                     }
 
-                    return userName.Trim();
+                    return userName;
                 }
                 catch (Exception ex)
                 {
@@ -127,7 +122,6 @@ namespace cybersecurity_chatbot_csharp
                 }
             }
 
-            // Fallback to default name if max attempts reached
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("Using default name 'User'");
             Console.ResetColor();
@@ -135,9 +129,8 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Displays a personalized welcome message with decorative borders
+        /// Displays a personalized welcome message with decorative borders.
         /// </summary>
-        /// <param name="userName">The user's name to include in the message</param>
         public void DisplayWelcomeMessage(string userName)
         {
             try
@@ -156,12 +149,12 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Simulates typing effect by printing text with character delays
+        /// Simulates typing effect by printing text with character delays.
         /// </summary>
-        /// <param name="text">Text to display</param>
-        /// <param name="delay">Milliseconds delay between characters</param>
         public void TypeText(string text, int delay = 30)
         {
+            if (string.IsNullOrEmpty(text)) return;
+
             foreach (char c in text)
             {
                 Console.Write(c);
@@ -171,9 +164,8 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Displays error messages in red text
+        /// Displays error messages in standardized red text.
         /// </summary>
-        /// <param name="message">Error message to display</param>
         public void DisplayError(string message)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -181,31 +173,26 @@ namespace cybersecurity_chatbot_csharp
             Console.ResetColor();
         }
 
-        /// <summary>
-        /// Converts an image file to ASCII art
-        /// </summary>
-        /// <param name="imagePath">Path to source image</param>
-        /// <param name="width">Width in characters</param>
-        /// <param name="height">Height in characters</param>
-        /// <returns>ASCII art string</returns>
+        private string GetResourcePath(string folder, string fileName)
+        {
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+            string relativePath = Path.Combine(folder, fileName);
+            return Path.GetFullPath(Path.Combine(basePath, relativePath));
+        }
+
         private string ConvertImageToAscii(string imagePath, int width, int height)
         {
             using (Bitmap bitmap = new Bitmap(imagePath))
             {
-                // Resize image to fit console
                 Bitmap resizedImage = new Bitmap(bitmap, new Size(width, height));
                 StringBuilder asciiArt = new StringBuilder();
 
-                // Process each pixel
                 for (int y = 0; y < resizedImage.Height; y++)
                 {
                     for (int x = 0; x < resizedImage.Width; x++)
                     {
-                        // Convert pixel to grayscale
                         Color pixelColor = resizedImage.GetPixel(x, y);
                         int grayValue = (int)(0.3 * pixelColor.R + 0.59 * pixelColor.G + 0.11 * pixelColor.B);
-
-                        // Map grayscale to ASCII character
                         char asciiChar = MapGrayValueToAscii(grayValue);
                         asciiArt.Append(asciiChar);
                     }
@@ -216,22 +203,11 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
-        /// <summary>
-        /// Maps grayscale value (0-255) to ASCII character
-        /// </summary>
         private char MapGrayValueToAscii(int grayValue)
         {
-            grayValue = Clamp(grayValue, 0, 255);
-            int index = grayValue * (asciiChars.Length - 1) / 255;
-            return asciiChars[index];
-        }
-
-        /// <summary>
-        /// Clamps value between min and max bounds
-        /// </summary>
-        private int Clamp(int value, int min, int max)
-        {
-            return (value < min) ? min : (value > max) ? max : value;
+            grayValue = Math.Min(Math.Max(grayValue, 0), 255);
+            int index = grayValue * (AsciiChars.Length - 1) / 255;
+            return AsciiChars[index];
         }
     }
 }
