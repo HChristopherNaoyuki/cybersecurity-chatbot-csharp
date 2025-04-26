@@ -5,74 +5,92 @@ using System.Linq;
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
-    /// Orchestrates all conversation logic for the chatbot.
-    /// Implements natural language processing, sentiment analysis, and dynamic responses.
-    /// 
+    /// Orchestrates all conversation logic and natural language processing for the chatbot.
+    /// Implements a sophisticated pipeline for processing user input and generating contextual responses.
+    ///
     /// Key Features:
-    /// - Keyword recognition
-    /// - Sentiment detection
-    /// - Context-aware responses
-    /// - Interest tracking
-    /// - Command processing
-    /// 
+    /// - Multi-stage input processing pipeline
+    /// - Sentiment-aware response generation
+    /// - Contextual memory integration
+    /// - Customizable command handling
+    /// - Rich text formatting with color coding
+    ///
     /// Design Patterns:
-    /// - State (conversation flow)
-    /// - Strategy (response generation)
-    /// - Chain of Responsibility (command processing)
+    /// - Chain of Responsibility: For command processing pipeline
+    /// - Strategy: Multiple response generation strategies
+    /// - State: Manages conversation context
+    /// - Observer: Notifies UI of responses
     /// </summary>
     public class ConversationManager
     {
-        // Dependencies
         private readonly KnowledgeBase _knowledgeBase;
         private readonly MemoryManager _memory;
         private readonly UserInterface _ui;
 
-        // Configuration
-        private readonly Dictionary<string, string[]> _sentimentKeywords = new Dictionary<string, string[]>
-        {
-            ["worried"] = new[] { "worried", "concerned", "scared", "afraid" },
-            ["positive"] = new[] { "happy", "excited", "great", "good" },
-            ["negative"] = new[] { "angry", "frustrated", "annoyed", "upset" },
-            ["curious"] = new[] { "what", "how", "explain", "?", "tell me" }
-        };
-
-        private readonly string[] _exitCommands = { "exit", "quit", "bye" };
-        private readonly string[] _helpCommands = { "help", "options", "topics" };
-        private readonly string[] _favoritesCommands = { "favorites", "my favorites" };
+        /// <summary>
+        /// Lambda expression for detecting exit commands.
+        /// Provides case-insensitive comparison against known exit phrases.
+        /// </summary>
+        private readonly Func<string, bool> _isExitCommand = input =>
+            new[] { "exit", "quit", "bye" }.Contains(input, StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Initializes a new ConversationManager instance.
-        /// 
-        /// Parameters:
-        /// - knowledgeBase: Source of response content
-        /// - memory: User state manager
-        /// - ui: Interface for input/output
-        /// 
-        /// Exceptions:
-        /// - ArgumentNullException for null dependencies
+        /// Lambda expression for detecting help commands.
+        /// Matches against various forms of help requests.
         /// </summary>
+        private readonly Func<string, bool> _isHelpCommand = input =>
+            new[] { "help", "options", "topics" }.Contains(input, StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Lambda expression for detecting name queries.
+        /// Uses substring matching for flexible phrasing.
+        /// </summary>
+        private readonly Func<string, bool> _isNameQuery = input =>
+            input.IndexOf("what is my name", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        /// <summary>
+        /// Delegate defining the signature for response generation strategies.
+        /// Allows polymorphic response handling based on context.
+        /// </summary>
+        private delegate string ResponseGenerator(string input, string sentiment, List<string> keywords);
+
+        /// <summary>
+        /// Dictionary mapping response types to their generation strategies.
+        /// Enables flexible addition of new response types without modifying core logic.
+        /// </summary>
+        private readonly Dictionary<string, ResponseGenerator> _responseHandlers;
+
+        /// <summary>
+        /// Initializes a new ConversationManager with required dependencies.
+        /// Uses constructor injection for testability and loose coupling.
+        /// </summary>
+        /// <param name="knowledgeBase">The knowledge repository</param>
+        /// <param name="memory">The memory persistence system</param>
+        /// <param name="ui">The user interface handler</param>
+        /// <exception cref="ArgumentNullException">Thrown if any dependency is null</exception>
         public ConversationManager(KnowledgeBase knowledgeBase, MemoryManager memory, UserInterface ui)
         {
             _knowledgeBase = knowledgeBase ?? throw new ArgumentNullException(nameof(knowledgeBase));
             _memory = memory ?? throw new ArgumentNullException(nameof(memory));
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
+
+            // Initialize response handlers
+            _responseHandlers = new Dictionary<string, ResponseGenerator>
+            {
+                ["default"] = GenerateDefaultResponse,
+                ["interest"] = GenerateInterestBasedResponse,
+                ["name"] = GenerateNameResponse
+            };
         }
 
         /// <summary>
-        /// Starts and manages the main conversation loop.
-        /// 
-        /// Features:
-        /// - Self-healing error handling
-        /// - Persistent until exit command
-        /// - Help guidance
-        /// - Graceful termination
+        /// Starts the main conversation loop.
+        /// Implements self-healing error recovery through recursive restart.
         /// </summary>
         public void StartChat()
         {
             try
             {
-                _ui.TypeText("Type 'help' for topics, 'favorites' to manage favorites, or 'exit' to quit", 30);
-
                 while (true)
                 {
                     ProcessUserInput();
@@ -80,20 +98,18 @@ namespace cybersecurity_chatbot_csharp
             }
             catch (Exception ex)
             {
-                _ui.DisplayError($"System error: {ex.Message}");
-                _ui.TypeText("Restarting conversation...", 30);
+                _ui.DisplayError($"Conversation error: {ex.Message}");
                 StartChat(); // Recursive restart
             }
         }
 
         /// <summary>
-        /// Processes a single user input cycle.
-        /// 
-        /// Workflow:
-        /// 1. Gets and validates input
-        /// 2. Routes commands
-        /// 3. Processes natural language
-        /// 4. Generates responses
+        /// Processes a single user input through the complete conversation pipeline.
+        /// Implements the following workflow:
+        /// 1. Input collection and validation
+        /// 2. Command detection and handling
+        /// 3. Natural language processing
+        /// 4. Response generation and display
         /// </summary>
         private void ProcessUserInput()
         {
@@ -105,21 +121,21 @@ namespace cybersecurity_chatbot_csharp
                 return;
             }
 
-            if (IsExitCommand(input))
+            if (_isExitCommand(input))
             {
                 HandleExit();
                 return;
             }
 
-            if (IsHelpCommand(input))
+            if (_isHelpCommand(input))
             {
                 DisplayHelp();
                 return;
             }
 
-            if (IsFavoritesCommand(input))
+            if (_isNameQuery(input))
             {
-                HandleFavoritesCommand(input);
+                DisplayNameResponse();
                 return;
             }
 
@@ -127,13 +143,10 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Gets and formats user input with proper prompting.
-        /// 
-        /// UI Features:
-        /// - Color-coded prompt
-        /// - Input trimming
-        /// - Null safety
+        /// Collects user input with proper console formatting.
+        /// Applies trimming and null protection.
         /// </summary>
+        /// <returns>The cleaned user input string</returns>
         private string GetUserInput()
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -143,22 +156,7 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Determines if input is an exit command.
-        /// 
-        /// Comparison:
-        /// - Case-insensitive
-        /// - Whole-word matching
-        /// </summary>
-        private bool IsExitCommand(string input) =>
-            _exitCommands.Contains(input, StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Handles graceful application termination.
-        /// 
-        /// Cleanup:
-        /// - Ensures console reset
-        /// - Provides friendly exit
-        /// - Uses Environment.Exit
+        /// Handles application exit with proper cleanup and user feedback.
         /// </summary>
         private void HandleExit()
         {
@@ -167,142 +165,94 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Determines if input is a help request.
-        /// 
-        /// Comparison:
-        /// - Case-insensitive
-        /// - Whole-word matching
-        /// </summary>
-        private bool IsHelpCommand(string input) =>
-            _helpCommands.Contains(input, StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Displays comprehensive help information.
-        /// 
-        /// Content:
-        /// - Available topics
-        /// - Usage examples
-        /// - Command reference
+        /// Displays help information including available topics and commands.
+        /// Uses the knowledge base to dynamically generate topic list.
         /// </summary>
         private void DisplayHelp()
         {
             _ui.TypeText("I can help with these cybersecurity topics:", 20);
-
             foreach (string topic in _knowledgeBase.GetAllTopics())
             {
-                if (!string.IsNullOrEmpty(topic))
-                {
-                    Console.WriteLine($"- {topic}");
-                }
+                Console.WriteLine($"- {topic}");
             }
-
-            _ui.TypeText("\nTry saying:", 20);
-            Console.WriteLine("• \"Tell me about password safety\"");
-            Console.WriteLine("• \"How do I recognize phishing emails?\"");
-            Console.WriteLine("• \"I'm interested in privacy\"");
-
-            _ui.TypeText("\nCommands:", 20);
-            Console.WriteLine("• help - Show this help");
-            Console.WriteLine("• favorites - View your favorites");
-            Console.WriteLine("• favorites add - Add a new favorite");
-            Console.WriteLine("• exit - End the conversation");
         }
 
         /// <summary>
-        /// Determines if input is a favorites command.
-        /// 
-        /// Comparison:
-        /// - Case-insensitive
-        /// - Prefix matching
+        /// Displays the name recall response with proper formatting.
+        /// Uses the memory manager's configured response strategy.
         /// </summary>
-        private bool IsFavoritesCommand(string input) =>
-            _favoritesCommands.Any(cmd => input.StartsWith(cmd, StringComparison.OrdinalIgnoreCase));
-
-        /// <summary>
-        /// Routes favorites-related commands to appropriate handlers.
-        /// 
-        /// Supported Commands:
-        /// - "favorites" - View all
-        /// - "favorites add" - Add new
-        /// </summary>
-        private void HandleFavoritesCommand(string input)
+        private void DisplayNameResponse()
         {
-            if (input.Equals("favorites", StringComparison.OrdinalIgnoreCase))
-            {
-                _memory.DisplayFavorites();
-            }
-            else if (input.StartsWith("favorites add", StringComparison.OrdinalIgnoreCase))
-            {
-                _memory.StoreUserFavorite();
-            }
-            else
-            {
-                _ui.DisplayError("Unknown favorites command. Try 'favorites' or 'favorites add'");
-            }
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("ChatBot: ");
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            _ui.TypeText(_memory.OnNameRecall(_memory.UserName), 20);
+            Console.ResetColor();
         }
 
         /// <summary>
-        /// Processes natural language input with full NLP pipeline.
-        /// 
-        /// Pipeline Stages:
+        /// Processes natural language input through the complete NLP pipeline:
         /// 1. Sentiment analysis
         /// 2. Keyword extraction
         /// 3. Interest detection
-        /// 4. Response generation
+        /// 4. Contextual response generation
         /// </summary>
+        /// <param name="input">The user's natural language input</param>
         private void ProcessNaturalLanguage(string input)
         {
             string sentiment = DetectSentiment(input);
             List<string> keywords = ExtractKeywords(input);
 
-            if (TryHandleInterestExpression(input, keywords))
-                return;
+            if (TryHandleInterestExpression(input, keywords)) return;
 
-            if (keywords.Count == 0 && _memory.HasInterest())
-            {
-                HandleRememberedInterest();
-                return;
-            }
+            var responseType = DetermineResponseType(input, keywords);
+            string response = _responseHandlers[responseType](input, sentiment, keywords);
 
-            GenerateResponse(input, sentiment, keywords);
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("ChatBot: ");
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            _ui.TypeText(response, 20);
+            Console.ResetColor();
         }
 
         /// <summary>
         /// Analyzes text to determine emotional sentiment.
-        /// 
-        /// Algorithm:
-        /// - Keyword-based pattern matching
-        /// - Priority-ordered sentiment categories
-        /// - Default neutral sentiment
+        /// Uses keyword matching against a sentiment lexicon.
         /// </summary>
+        /// <param name="input">Text to analyze</param>
+        /// <returns>Detected sentiment ("neutral" if none matched)</returns>
         private string DetectSentiment(string input)
         {
-            if (string.IsNullOrWhiteSpace(input))
-                return "neutral";
+            if (string.IsNullOrWhiteSpace(input)) return "neutral";
+
+            var sentimentMap = new Dictionary<string, string[]>
+            {
+                ["worried"] = new[] { "worried", "concerned", "scared" },
+                ["positive"] = new[] { "happy", "excited", "great" },
+                ["negative"] = new[] { "angry", "frustrated", "upset" },
+                ["curious"] = new[] { "what", "how", "explain", "?" }
+            };
 
             string lowerInput = input.ToLower();
-
-            foreach (var sentiment in _sentimentKeywords)
+            foreach (var sentiment in sentimentMap)
             {
                 if (sentiment.Value.Any(keyword => lowerInput.Contains(keyword)))
+                {
                     return sentiment.Key;
+                }
             }
-
             return "neutral";
         }
 
         /// <summary>
         /// Extracts meaningful keywords from input text.
-        /// 
-        /// Processing:
-        /// - Tokenization
-        /// - Stop word removal
-        /// - Minimum length filtering
+        /// Applies stopword filtering and minimum length requirements.
         /// </summary>
+        /// <param name="input">Text to process</param>
+        /// <returns>List of relevant keywords</returns>
         private List<string> ExtractKeywords(string input)
         {
-            if (string.IsNullOrWhiteSpace(input))
-                return new List<string>();
+            if (string.IsNullOrWhiteSpace(input)) return new List<string>();
 
             return input.Split(new[] { ' ', ',', '.', '?', '!' },
                       StringSplitOptions.RemoveEmptyEntries)
@@ -313,150 +263,96 @@ namespace cybersecurity_chatbot_csharp
 
         /// <summary>
         /// Handles expressions of interest in specific topics.
-        /// 
-        /// Pattern:
-        /// - Matches "interested in [topic]" phrases
-        /// - Updates user memory
-        /// - Provides immediate feedback
+        /// Updates memory and provides immediate feedback.
         /// </summary>
+        /// <param name="input">User input to analyze</param>
+        /// <param name="keywords">Extracted keywords</param>
+        /// <returns>True if interest was detected and handled</returns>
         private bool TryHandleInterestExpression(string input, List<string> keywords)
         {
-            if (!input.ToLower().Contains("interested in"))
-                return false;
+            if (!input.ToLower().Contains("interested in")) return false;
 
             foreach (string topic in _knowledgeBase.GetAllTopics())
             {
                 if (input.ToLower().Contains(topic.ToLower()))
                 {
                     _memory.RememberInterest(topic);
-                    _ui.TypeText($"I'll remember you're interested in {topic}. ", 20);
-
                     string response = _knowledgeBase.GetResponse(topic);
-                    if (!string.IsNullOrEmpty(response))
-                    {
-                        _ui.TypeText(response, 20);
-                    }
+
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write("ChatBot: ");
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    _ui.TypeText(response, 20);
+                    Console.ResetColor();
+
                     return true;
                 }
             }
-
             return false;
         }
 
         /// <summary>
-        /// Handles conversation when no keywords but remembered interest exists.
-        /// 
-        /// Personalization:
-        /// - Uses stored interest
-        /// - Provides contextual follow-up
+        /// Determines the appropriate response type based on context.
+        /// Considers both current input and remembered interests.
         /// </summary>
-        private void HandleRememberedInterest()
+        private string DetermineResponseType(string input, List<string> keywords)
         {
-            string response = _knowledgeBase.GetResponse(_memory.UserInterest);
-            if (!string.IsNullOrEmpty(response))
-            {
-                _ui.TypeText($"Since you're interested in {_memory.UserInterest}, here's more: ", 20);
-                _ui.TypeText(response, 20);
-            }
+            if (_memory.HasInterest() && keywords.Contains(_memory.UserInterest.ToLower()))
+                return "interest";
+            return "default";
         }
 
         /// <summary>
-        /// Generates and displays response to user input.
-        /// 
-        /// Composition:
-        /// - Sentiment-appropriate opening
-        /// - Topic-matched content
-        /// - Fallback guidance
+        /// Generates a default response based on keywords and sentiment.
+        /// Provides topic-matched responses when possible.
         /// </summary>
-        private void GenerateResponse(string input, string sentiment, List<string> keywords)
+        private string GenerateDefaultResponse(string input, string sentiment, List<string> keywords)
         {
             string sentimentResponse = GetSentimentResponse(sentiment);
-            var matchedTopics = FindMatchingTopics(keywords);
+            var matchedTopics = keywords
+                .Select(k => new { Key = k, Value = _knowledgeBase.GetResponse(k) })
+                .Where(x => !string.IsNullOrEmpty(x.Value))
+                .ToDictionary(x => x.Key, x => x.Value);
 
             if (matchedTopics.Count > 0)
             {
-                DisplayMatchedTopics(sentimentResponse, matchedTopics);
+                return string.Join("\n", matchedTopics.Select(t => $"{t.Key.ToUpper()} >> {t.Value}"));
             }
-            else
-            {
-                _ui.DisplayError(sentimentResponse + "I'm not sure about that. Try 'help' for options.");
-            }
+            return sentimentResponse + "I'm not sure about that. Try 'help' for options.";
+        }
+
+        /// <summary>
+        /// Generates an interest-contextualized response.
+        /// Personalizes the response based on remembered interests.
+        /// </summary>
+        private string GenerateInterestBasedResponse(string input, string sentiment, List<string> keywords)
+        {
+            string baseResponse = _knowledgeBase.GetResponse(_memory.UserInterest);
+            return _memory.GetInterestResponse(_memory.UserInterest, baseResponse);
+        }
+
+        /// <summary>
+        /// Generates a name recall response.
+        /// Uses the memory manager's configured response strategy.
+        /// </summary>
+        private string GenerateNameResponse(string input, string sentiment, List<string> keywords)
+        {
+            return _memory.OnNameRecall(_memory.UserName);
         }
 
         /// <summary>
         /// Generates sentiment-appropriate response openings.
-        /// 
-        /// Tone Matching:
-        /// - Empathetic for negative
-        /// - Enthusiastic for positive
-        /// - Neutral otherwise
         /// </summary>
         private string GetSentimentResponse(string sentiment)
         {
             switch (sentiment)
             {
-                case "worried":
-                    return "I understand this can be concerning. ";
-                case "positive":
-                    return "Great! ";
-                case "negative":
-                    return "I'm sorry you're feeling frustrated. ";
-                case "curious":
-                    return "That's a great question! ";
-                default:
-                    return "";
+                case "worried": return "I understand this can be concerning. ";
+                case "positive": return "Great! ";
+                case "negative": return "I'm sorry you're feeling frustrated. ";
+                case "curious": return "That's a great question! ";
+                default: return "";
             }
-        }
-
-        /// <summary>
-        /// Finds knowledge base topics matching keywords.
-        /// 
-        /// Matching:
-        /// - Case-insensitive
-        /// - Exact match
-        /// - Returns dictionary of matches
-        /// </summary>
-        private Dictionary<string, string> FindMatchingTopics(List<string> keywords)
-        {
-            var matches = new Dictionary<string, string>();
-
-            foreach (string keyword in keywords)
-            {
-                string response = _knowledgeBase.GetResponse(keyword);
-                if (!string.IsNullOrEmpty(response))
-                {
-                    matches[keyword] = response;
-                }
-            }
-
-            return matches;
-        }
-
-        /// <summary>
-        /// Displays matched topics with proper formatting.
-        /// 
-        /// Presentation:
-        /// - Color-coded
-        /// - Typing animation
-        /// - Clear topic separation
-        /// </summary>
-        private void DisplayMatchedTopics(string sentimentResponse, Dictionary<string, string> matchedTopics)
-        {
-            Console.ForegroundColor = ConsoleColor.DarkCyan;
-            Console.Write("ChatBot: ");
-            Console.ForegroundColor = ConsoleColor.Magenta;
-
-            if (!string.IsNullOrEmpty(sentimentResponse))
-            {
-                _ui.TypeText(sentimentResponse, 20);
-            }
-
-            foreach (var topic in matchedTopics)
-            {
-                _ui.TypeText($"{topic.Key.ToUpper()} >> {topic.Value}", 20);
-            }
-
-            Console.ResetColor();
         }
     }
 }

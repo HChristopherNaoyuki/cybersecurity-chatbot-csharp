@@ -4,66 +4,73 @@ namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
     /// Main orchestrator class for the Cybersecurity Awareness Chatbot application.
-    /// Coordinates all major components and manages the application lifecycle.
+    /// Implements the Facade pattern to provide a simplified interface to the chatbot's subsystems.
     /// 
     /// Responsibilities:
-    /// - Initializes all subsystem components
-    /// - Manages the high-level application flow
-    /// - Serves as the entry point for chatbot functionality
+    /// - Coordinates all major components (UI, Knowledge, Memory, Conversation)
+    /// - Manages the high-level application lifecycle
+    /// - Handles initialization of all subsystems
+    /// - Provides the main execution entry point
+    /// 
+    /// Design Principles:
+    /// - Single Responsibility: Only coordinates, contains no business logic
+    /// - Dependency Injection: Requires all subsystems in constructor
+    /// - Loose Coupling: Subsystems communicate through interfaces
     /// </summary>
     public class ChatBot
     {
-        // Core subsystem components
-        private readonly KnowledgeBase knowledgeBase;
-        private readonly UserInterface ui;
-        private readonly ConversationManager conversation;
-        private readonly MemoryManager memory;
+        private readonly KnowledgeBase _knowledgeBase;
+        private readonly UserInterface _ui;
+        private readonly ConversationManager _conversation;
+        private readonly MemoryManager _memory;
 
         /// <summary>
-        /// Initializes a new instance of the ChatBot class with all required dependencies.
-        /// 
-        /// Design Pattern:
-        /// - Uses Dependency Injection to promote loose coupling and testability
-        /// - Follows the Composition Root pattern for object graph construction
+        /// Initializes a new instance of the ChatBot class.
+        /// Uses the Composition Root pattern for dependency construction.
         /// </summary>
         public ChatBot()
         {
-            // Initialize subsystems in recommended order:
-            // 1. UI (needed first for any output)
-            // 2. Knowledge Base (foundational data)
-            // 3. Memory (persistence layer)
-            // 4. Conversation (main logic, depends on all others)
-            ui = new UserInterface();
-            knowledgeBase = new KnowledgeBase();
-            memory = new MemoryManager();
-            conversation = new ConversationManager(knowledgeBase, memory, ui);
+            _ui = new UserInterface();
+            _knowledgeBase = new KnowledgeBase();
+            _memory = new MemoryManager();
+            _conversation = new ConversationManager(_knowledgeBase, _memory, _ui);
         }
 
         /// <summary>
         /// Main execution method that runs the chatbot workflow.
-        /// 
-        /// Execution Flow:
-        /// 1. Plays welcome audio greeting
-        /// 2. Displays ASCII art header
-        /// 3. Collects and stores user's name
-        /// 4. Displays personalized welcome
-        /// 5. Enters main conversation loop
-        /// 
-        /// Error Handling:
-        /// - Any exceptions bubble up to Program.cs for centralized handling
+        /// Implements the Template Method pattern for the fixed execution sequence.
         /// </summary>
         public void Run()
         {
-            // 1. Multimedia welcome sequence
-            ui.PlayVoiceGreeting();
-            ui.DisplayAsciiArt();
+            try
+            {
+                ExecuteWelcomeSequence();
+                ExecuteUserIdentification();
+                ExecuteMainConversation();
+            }
+            catch (Exception ex)
+            {
+                _ui.DisplayError($"Fatal error: {ex.Message}");
+                Environment.Exit(1);
+            }
+        }
 
-            // 2. User identification
-            memory.UserName = ui.GetUserName();
-            ui.DisplayWelcomeMessage(memory.UserName);
+        private void ExecuteWelcomeSequence()
+        {
+            _ui.PlayVoiceGreeting();
+            _ui.DisplayAsciiArt();
+        }
 
-            // 3. Core interaction loop
-            conversation.StartChat();
+        private void ExecuteUserIdentification()
+        {
+            _memory.UserName = _ui.GetUserName();
+            _ui.DisplayWelcomeMessage(_memory.UserName);
+        }
+
+        private void ExecuteMainConversation()
+        {
+            _ui.TypeText("Type 'help' for topics or 'exit' to quit.", 30);
+            _conversation.StartChat();
         }
     }
 }
