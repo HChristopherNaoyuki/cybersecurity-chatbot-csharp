@@ -1,55 +1,37 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
-    /// Manages all user-specific data persistence and recall functionality for the chatbot.
-    /// Handles user identity, interests, and personalized responses.
-    /// 
-    /// Key Features:
-    /// - Dynamic username initialization (no default "Guest")
-    /// - Persistent interest tracking
-    /// - Personalized response generation
-    /// - Thread-safe file operations
+    /// Manages all user-specific data persistence and recall functionality
+    /// Now includes topic frequency tracking and enhanced name recall
     /// </summary>
     public class MemoryManager
     {
         private const string StorageFileName = "user_memory.txt";
         private string _userName;
         private string _userInterest;
+        private Dictionary<string, int> _topicCounts = new Dictionary<string, int>();
 
-        /// <summary>
-        /// Initializes a new MemoryManager instance.
-        /// Does not set default username - waits for explicit setting.
-        /// </summary>
+        public delegate string NameRecallResponse(string name);
+
         public MemoryManager()
         {
-            _userName = null; // Will be set when user provides name
+            _userName = null;
             _userInterest = null;
             InitializeStorage();
             LoadPersistedData();
         }
 
         /// <summary>
-        /// Delegate for customizing name recall responses.
-        /// Allows flexible response formatting without modifying core logic.
-        /// </summary>
-        public delegate string NameRecallResponse(string name);
-
-        /// <summary>
-        /// Default name recall response strategy.
-        /// Uses playful tone while reminding user of their name.
+        /// Updated name recall response with more personality
         /// </summary>
         public NameRecallResponse OnNameRecall = (name) =>
-            $"Have you forgotten your name? I'm going to tell you anyways {name}.";
+            $"Your name is {name}. Have you forgotten?";
 
-        /// <summary>
-        /// Gets or sets the user's name with validation.
-        /// Ensures name is never null or whitespace.
-        /// </summary>
-        /// <exception cref="ArgumentException">Thrown when name is empty</exception>
         public string UserName
         {
             get => _userName ?? throw new InvalidOperationException("Username not set");
@@ -61,21 +43,10 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
-        /// <summary>
-        /// Gets the user's current interest topic.
-        /// Returns null if no interest has been expressed.
-        /// </summary>
         public string UserInterest => _userInterest;
 
-        /// <summary>
-        /// Checks if user has expressed an interest in any topic.
-        /// </summary>
         public bool HasInterest() => !string.IsNullOrEmpty(_userInterest);
 
-        /// <summary>
-        /// Checks if specified topic matches user's current interest.
-        /// Case-insensitive comparison.
-        /// </summary>
         public bool IsCurrentInterest(string topic)
         {
             return !string.IsNullOrEmpty(topic) &&
@@ -84,31 +55,69 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Records and persists a user's interest in a topic.
-        /// Triggers immediate file persistence.
+        /// Records interest and increments topic count
         /// </summary>
-        /// <param name="topic">Topic of interest</param>
-        /// <exception cref="ArgumentException">Thrown for empty topics</exception>
         public void RememberInterest(string topic)
         {
             if (string.IsNullOrWhiteSpace(topic))
                 throw new ArgumentException("Topic cannot be empty");
 
             _userInterest = topic.Trim();
+            IncrementTopicCount(topic);
             PersistData();
         }
 
         /// <summary>
-        /// Generates interest-contextualized responses.
-        /// Formats base response with interest context.
+        /// Tracks how many times each topic has been discussed
         /// </summary>
-        public Func<string, string, string> GetInterestResponse = (interest, response) =>
-            $"As someone interested in {interest}, {response}";
+        public void IncrementTopicCount(string topic)
+        {
+            if (string.IsNullOrWhiteSpace(topic)) return;
+
+            string normalizedTopic = topic.ToLower().Trim();
+
+            if (_topicCounts.ContainsKey(normalizedTopic))
+            {
+                _topicCounts[normalizedTopic]++;
+            }
+            else
+            {
+                _topicCounts[normalizedTopic] = 1;
+            }
+        }
 
         /// <summary>
-        /// Initializes storage file if it doesn't exist.
-        /// Handles file system errors gracefully.
+        /// Gets the count for a specific topic
         /// </summary>
+        public int GetTopicCount(string topic)
+        {
+            if (string.IsNullOrWhiteSpace(topic)) return 0;
+            string normalizedTopic = topic.ToLower().Trim();
+            return _topicCounts.TryGetValue(normalizedTopic, out int count) ? count : 0;
+        }
+
+        /// <summary>
+        /// Gets all topic counts for reporting
+        /// </summary>
+        public Dictionary<string, int> GetAllTopicCounts()
+        {
+            return new Dictionary<string, int>(_topicCounts);
+        }
+
+        /// <summary>
+        /// Updated to include contextual responses based on interest history
+        /// </summary>
+        public Func<string, string, string> GetInterestResponse = (interest, response) =>
+        {
+            string[] possibleResponses = {
+                $"As someone interested in {interest}, {response}",
+                $"Since you've asked about {interest} before, {response}",
+                $"Given your interest in {interest}, {response}",
+                $"I remember you're curious about {interest}. {response}"
+            };
+            return possibleResponses[new Random().Next(possibleResponses.Length)];
+        };
+
         private void InitializeStorage()
         {
             try
@@ -124,10 +133,6 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
-        /// <summary>
-        /// Loads persisted data from storage file.
-        /// Only loads interest (username is session-only).
-        /// </summary>
         private void LoadPersistedData()
         {
             try
@@ -135,7 +140,22 @@ namespace cybersecurity_chatbot_csharp
                 if (!File.Exists(StorageFileName)) return;
 
                 var lines = File.ReadAllLines(StorageFileName);
-                _userInterest = lines.FirstOrDefault()?.Trim();
+                if (lines.Length > 0)
+                {
+                    _userInterest = lines[0]?.Trim();
+                }
+                if (lines.Length > 1)
+                {
+                    // Load topic counts from remaining lines
+                    foreach (var line in lines.Skip(1))
+                    {
+                        var parts = line.Split(':');
+                        if (parts.Length == 2 && int.TryParse(parts[1], out int count))
+                        {
+                            _topicCounts[parts[0].ToLower()] = count;
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -143,15 +163,20 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
-        /// <summary>
-        /// Persists current user interest to storage.
-        /// Uses atomic write operation to prevent corruption.
-        /// </summary>
         private void PersistData()
         {
             try
             {
-                File.WriteAllText(StorageFileName, _userInterest ?? string.Empty);
+                var lines = new List<string>();
+                lines.Add(_userInterest ?? string.Empty);
+
+                // Save topic counts in format "topic:count"
+                foreach (var kvp in _topicCounts)
+                {
+                    lines.Add($"{kvp.Key}:{kvp.Value}");
+                }
+
+                File.WriteAllLines(StorageFileName, lines);
             }
             catch (Exception ex)
             {
