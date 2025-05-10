@@ -5,8 +5,8 @@ using System.Linq;
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
-    /// Manages all conversation logic and response generation for the chatbot.
-    /// Handles natural language processing and contextual responses.
+    /// Manages all conversation logic with enhanced sentiment integration
+    /// and topic awareness
     /// </summary>
     public class ConversationManager
     {
@@ -21,7 +21,8 @@ namespace cybersecurity_chatbot_csharp
             new[] { "help", "options", "topics" }.Contains(input, StringComparer.OrdinalIgnoreCase);
 
         private readonly Func<string, bool> _isNameQuery = input =>
-            input.IndexOf("what is my name", StringComparison.OrdinalIgnoreCase) >= 0;
+            input.IndexOf("what is my name", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            input.IndexOf("who am i", StringComparison.OrdinalIgnoreCase) >= 0;
 
         private delegate string ResponseGenerator(string input, string sentiment, List<string> keywords);
         private readonly Dictionary<string, ResponseGenerator> _responseHandlers;
@@ -120,11 +121,47 @@ namespace cybersecurity_chatbot_csharp
             var responseType = DetermineResponseType(input, keywords);
             string response = _responseHandlers[responseType](input, sentiment, keywords);
 
+            // Format final response with sentiment and topic awareness
+            response = FormatFinalResponse(response, sentiment, keywords);
+
+            DisplayResponse(response);
+        }
+
+        private void DisplayResponse(string response)
+        {
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("ChatBot: ");
             Console.ForegroundColor = ConsoleColor.Magenta;
             _ui.TypeText(response, 20);
             Console.ResetColor();
+        }
+
+        private string FormatFinalResponse(string baseResponse, string sentiment, List<string> keywords)
+        {
+            string finalResponse = baseResponse;
+
+            // Add sentiment prefix if detected
+            if (sentiment != "neutral")
+            {
+                string sentimentPrefix = GetSentimentResponse(sentiment);
+                finalResponse = $"{sentimentPrefix}{finalResponse}";
+            }
+
+            // Check if this is a repeated topic
+            foreach (string keyword in keywords)
+            {
+                if (_memory.GetTopicCount(keyword) > 1)
+                {
+                    string topicResponse = _knowledgeBase.GetResponse(keyword);
+                    if (!string.IsNullOrEmpty(topicResponse))
+                    {
+                        finalResponse = _memory.GetInterestResponse(keyword, topicResponse);
+                        break;
+                    }
+                }
+            }
+
+            return finalResponse;
         }
 
         private string DetectSentiment(string input)
@@ -133,10 +170,10 @@ namespace cybersecurity_chatbot_csharp
 
             var sentimentMap = new Dictionary<string, string[]>
             {
-                ["worried"] = new[] { "worried", "concerned", "scared" },
-                ["positive"] = new[] { "happy", "excited", "great" },
-                ["negative"] = new[] { "angry", "frustrated", "upset" },
-                ["curious"] = new[] { "what", "how", "explain", "?" }
+                ["worried"] = new[] { "worried", "concerned", "scared", "nervous", "anxious" },
+                ["positive"] = new[] { "happy", "excited", "great", "good", "awesome" },
+                ["negative"] = new[] { "angry", "frustrated", "upset", "mad", "annoyed" },
+                ["curious"] = new[] { "what", "how", "explain", "?", "tell me", "why" }
             };
 
             string lowerInput = input.ToLower();
@@ -172,12 +209,7 @@ namespace cybersecurity_chatbot_csharp
                     _memory.RememberInterest(topic);
                     string response = _knowledgeBase.GetResponse(topic);
 
-                    Console.ForegroundColor = ConsoleColor.White;
-                    Console.Write("ChatBot: ");
-                    Console.ForegroundColor = ConsoleColor.Magenta;
-                    _ui.TypeText(response, 20);
-                    Console.ResetColor();
-
+                    DisplayResponse(response);
                     return true;
                 }
             }
@@ -199,7 +231,6 @@ namespace cybersecurity_chatbot_csharp
 
         private string GenerateDefaultResponse(string input, string sentiment, List<string> keywords)
         {
-            string sentimentResponse = GetSentimentResponse(sentiment);
             var matchedTopics = keywords
                 .Select(k => new { Key = k, Value = _knowledgeBase.GetResponse(k) })
                 .Where(x => !string.IsNullOrEmpty(x.Value))
@@ -209,7 +240,7 @@ namespace cybersecurity_chatbot_csharp
             {
                 return string.Join("\n", matchedTopics.Select(t => $"{t.Key.ToUpper()} >> {t.Value}"));
             }
-            return sentimentResponse + "I'm not sure about that. Try 'help' for options.";
+            return "I'm not sure about that. Try 'help' for options.";
         }
 
         private string GenerateInterestBasedResponse(string input, string sentiment, List<string> keywords)
@@ -230,11 +261,16 @@ namespace cybersecurity_chatbot_csharp
         {
             switch (sentiment)
             {
-                case "worried": return "I understand this can be concerning. ";
-                case "positive": return "Great! ";
-                case "negative": return "I'm sorry you're feeling frustrated. ";
-                case "curious": return "That's a great question! ";
-                default: return "";
+                case "worried":
+                    return "I understand this can be concerning. ";
+                case "positive":
+                    return "Great! I'm glad you're enthusiastic about security! ";
+                case "negative":
+                    return "I'm sorry you're feeling frustrated. Let me help. ";
+                case "curious":
+                    return "That's a great question! ";
+                default:
+                    return "";
             }
         }
     }
