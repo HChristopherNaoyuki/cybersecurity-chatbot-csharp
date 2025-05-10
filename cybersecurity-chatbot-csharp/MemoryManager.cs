@@ -6,18 +6,13 @@ namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
     /// Manages all user-specific data persistence and recall functionality for the chatbot.
-    /// Implements a lightweight file-based storage system following the Single Responsibility Principle.
-    ///
+    /// Handles user identity, interests, and personalized responses.
+    /// 
     /// Key Features:
-    /// - Persistent storage of user interests across sessions
-    /// - Name recall functionality with customizable response format
-    /// - Interest-based response generation
-    /// - Thread-safe file operations with proper error handling
-    ///
-    /// Design Patterns:
-    /// - Memento: For capturing and restoring user state
-    /// - Repository: Provides abstraction over storage mechanism
-    /// - Strategy: Allows customizable response formatting via delegates
+    /// - Dynamic username initialization (no default "Guest")
+    /// - Persistent interest tracking
+    /// - Personalized response generation
+    /// - Thread-safe file operations
     /// </summary>
     public class MemoryManager
     {
@@ -26,29 +21,26 @@ namespace cybersecurity_chatbot_csharp
         private string _userInterest;
 
         /// <summary>
-        /// Initializes a new instance of the MemoryManager.
-        /// Performs automatic storage initialization and data loading.
+        /// Initializes a new MemoryManager instance.
+        /// Does not set default username - waits for explicit setting.
         /// </summary>
         public MemoryManager()
         {
-            _userName = "Guest";
+            _userName = null; // Will be set when user provides name
             _userInterest = null;
             InitializeStorage();
             LoadPersistedData();
         }
 
         /// <summary>
-        /// Delegate for customizing the name recall response format.
-        /// Allows injection of different response strategies without modifying core logic.
+        /// Delegate for customizing name recall responses.
+        /// Allows flexible response formatting without modifying core logic.
         /// </summary>
-        /// <param name="name">The user's name to include in the response</param>
-        /// <returns>Formatted name recall response string</returns>
         public delegate string NameRecallResponse(string name);
 
         /// <summary>
         /// Default name recall response strategy.
-        /// Uses a playful tone while reminding the user of their name.
-        /// Example: "Have you forgotten your name? I'm going to tell you anyways John."
+        /// Uses playful tone while reminding user of their name.
         /// </summary>
         public NameRecallResponse OnNameRecall = (name) =>
             $"Have you forgotten your name? I'm going to tell you anyways {name}.";
@@ -57,33 +49,46 @@ namespace cybersecurity_chatbot_csharp
         /// Gets or sets the user's name with validation.
         /// Ensures name is never null or whitespace.
         /// </summary>
-        /// <exception cref="ArgumentException">Thrown when attempting to set empty name</exception>
+        /// <exception cref="ArgumentException">Thrown when name is empty</exception>
         public string UserName
         {
-            get => _userName;
-            set => _userName = string.IsNullOrWhiteSpace(value)
-                ? throw new ArgumentException("Username cannot be empty")
-                : value.Trim();
+            get => _userName ?? throw new InvalidOperationException("Username not set");
+            set
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                    throw new ArgumentException("Username cannot be empty");
+                _userName = value.Trim();
+            }
         }
 
         /// <summary>
-        /// Gets the user's current area of interest.
+        /// Gets the user's current interest topic.
         /// Returns null if no interest has been expressed.
         /// </summary>
         public string UserInterest => _userInterest;
 
         /// <summary>
-        /// Determines if the user has expressed an interest in any topic.
+        /// Checks if user has expressed an interest in any topic.
         /// </summary>
-        /// <returns>True if user has a stored interest, false otherwise</returns>
         public bool HasInterest() => !string.IsNullOrEmpty(_userInterest);
 
         /// <summary>
-        /// Records and persists a user's interest in a specific topic.
-        /// Triggers immediate persistence to ensure data durability.
+        /// Checks if specified topic matches user's current interest.
+        /// Case-insensitive comparison.
         /// </summary>
-        /// <param name="topic">The topic of interest</param>
-        /// <exception cref="ArgumentException">Thrown when topic is null or empty</exception>
+        public bool IsCurrentInterest(string topic)
+        {
+            return !string.IsNullOrEmpty(topic) &&
+                   !string.IsNullOrEmpty(_userInterest) &&
+                   _userInterest.Equals(topic, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Records and persists a user's interest in a topic.
+        /// Triggers immediate file persistence.
+        /// </summary>
+        /// <param name="topic">Topic of interest</param>
+        /// <exception cref="ArgumentException">Thrown for empty topics</exception>
         public void RememberInterest(string topic)
         {
             if (string.IsNullOrWhiteSpace(topic))
@@ -94,15 +99,15 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
-        /// Generates an interest-contextualized response using the provided base response.
-        /// Example: "As someone interested in privacy, [base response]"
+        /// Generates interest-contextualized responses.
+        /// Formats base response with interest context.
         /// </summary>
         public Func<string, string, string> GetInterestResponse = (interest, response) =>
             $"As someone interested in {interest}, {response}";
 
         /// <summary>
-        /// Initializes the storage file if it doesn't exist.
-        /// Handles potential file system errors gracefully.
+        /// Initializes storage file if it doesn't exist.
+        /// Handles file system errors gracefully.
         /// </summary>
         private void InitializeStorage()
         {
@@ -121,7 +126,7 @@ namespace cybersecurity_chatbot_csharp
 
         /// <summary>
         /// Loads persisted data from storage file.
-        /// Silently handles errors to prevent application crashes.
+        /// Only loads interest (username is session-only).
         /// </summary>
         private void LoadPersistedData()
         {
@@ -140,7 +145,7 @@ namespace cybersecurity_chatbot_csharp
 
         /// <summary>
         /// Persists current user interest to storage.
-        /// Uses atomic write operation to prevent data corruption.
+        /// Uses atomic write operation to prevent corruption.
         /// </summary>
         private void PersistData()
         {
