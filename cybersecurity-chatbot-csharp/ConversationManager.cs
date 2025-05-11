@@ -5,15 +5,20 @@ using System.Linq;
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
-    /// Manages all conversation logic with enhanced sentiment integration
-    /// and topic awareness
+    /// Handles all conversation logic with:
+    /// - Multi-keyword response generation
+    /// - Persistent keyword tracking
+    /// - Contextual conversation flow
+    /// - Natural language processing
     /// </summary>
     public class ConversationManager
     {
+        // Dependencies
         private readonly KnowledgeBase _knowledgeBase;
         private readonly MemoryManager _memory;
         private readonly UserInterface _ui;
 
+        // Command detection predicates
         private readonly Func<string, bool> _isExitCommand = input =>
             new[] { "exit", "quit", "bye" }.Contains(input, StringComparer.OrdinalIgnoreCase);
 
@@ -24,23 +29,16 @@ namespace cybersecurity_chatbot_csharp
             input.IndexOf("what is my name", StringComparison.OrdinalIgnoreCase) >= 0 ||
             input.IndexOf("who am i", StringComparison.OrdinalIgnoreCase) >= 0;
 
-        private delegate string ResponseGenerator(string input, string sentiment, List<string> keywords);
-        private readonly Dictionary<string, ResponseGenerator> _responseHandlers;
-
         public ConversationManager(KnowledgeBase knowledgeBase, MemoryManager memory, UserInterface ui)
         {
             _knowledgeBase = knowledgeBase ?? throw new ArgumentNullException(nameof(knowledgeBase));
             _memory = memory ?? throw new ArgumentNullException(nameof(memory));
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
-
-            _responseHandlers = new Dictionary<string, ResponseGenerator>
-            {
-                ["default"] = GenerateDefaultResponse,
-                ["interest"] = GenerateInterestBasedResponse,
-                ["name"] = GenerateNameResponse
-            };
         }
 
+        /// <summary>
+        /// Main chat loop that processes user input continuously
+        /// </summary>
         public void StartChat()
         {
             try
@@ -57,6 +55,9 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Processes a single user input through conversation pipeline
+        /// </summary>
         private void ProcessUserInput()
         {
             string input = GetUserInput();
@@ -88,6 +89,9 @@ namespace cybersecurity_chatbot_csharp
             ProcessNaturalLanguage(input);
         }
 
+        /// <summary>
+        /// Gets formatted user input with username prefix
+        /// </summary>
         private string GetUserInput()
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -111,20 +115,72 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Processes natural language input through full NLP pipeline
+        /// </summary>
         private void ProcessNaturalLanguage(string input)
         {
             string sentiment = DetectSentiment(input);
             List<string> keywords = ExtractKeywords(input);
 
+            // Save all keywords to memory
+            foreach (string keyword in keywords)
+            {
+                _memory.RememberKeyword(keyword);
+            }
+
             if (TryHandleInterestExpression(input, keywords)) return;
 
-            var responseType = DetermineResponseType(input, keywords);
-            string response = _responseHandlers[responseType](input, sentiment, keywords);
+            DisplayMultiTopicResponses(keywords, sentiment);
+        }
 
-            // Format final response with sentiment and topic awareness
-            response = FormatFinalResponse(response, sentiment, keywords);
+        /// <summary>
+        /// Displays individual responses for each recognized keyword
+        /// </summary>
+        private void DisplayMultiTopicResponses(List<string> keywords, string sentiment)
+        {
+            bool anyResponses = false;
 
-            DisplayResponse(response);
+            foreach (string keyword in keywords.Distinct())
+            {
+                string response = GetKeywordResponse(keyword, sentiment);
+                if (!string.IsNullOrEmpty(response))
+                {
+                    anyResponses = true;
+                    DisplayResponse(response);
+                }
+            }
+
+            if (!anyResponses)
+            {
+                DisplayResponse("I'm not sure about that. Try 'help' for options.");
+            }
+        }
+
+        /// <summary>
+        /// Generates a contextual response for a single keyword
+        /// </summary>
+        private string GetKeywordResponse(string keyword, string sentiment)
+        {
+            string response = _knowledgeBase.GetResponse(keyword);
+            if (string.IsNullOrEmpty(response)) return null;
+
+            // Get discussion count for contextual response
+            int discussionCount = _memory.GetKeywordCount(keyword);
+
+            // Add contextual prefix if discussed before
+            if (discussionCount > 1)
+            {
+                response = _memory.GetContextualResponse(keyword, response, discussionCount);
+            }
+
+            // Add sentiment prefix if needed
+            if (sentiment != "neutral")
+            {
+                response = $"{GetSentimentResponse(sentiment)}{response}";
+            }
+
+            return $"{keyword.ToUpper()}: {response}";
         }
 
         private void DisplayResponse(string response)
@@ -136,44 +192,16 @@ namespace cybersecurity_chatbot_csharp
             Console.ResetColor();
         }
 
-        private string FormatFinalResponse(string baseResponse, string sentiment, List<string> keywords)
-        {
-            string finalResponse = baseResponse;
-
-            // Add sentiment prefix if detected
-            if (sentiment != "neutral")
-            {
-                string sentimentPrefix = GetSentimentResponse(sentiment);
-                finalResponse = $"{sentimentPrefix}{finalResponse}";
-            }
-
-            // Check if this is a repeated topic
-            foreach (string keyword in keywords)
-            {
-                if (_memory.GetTopicCount(keyword) > 1)
-                {
-                    string topicResponse = _knowledgeBase.GetResponse(keyword);
-                    if (!string.IsNullOrEmpty(topicResponse))
-                    {
-                        finalResponse = _memory.GetInterestResponse(keyword, topicResponse);
-                        break;
-                    }
-                }
-            }
-
-            return finalResponse;
-        }
-
         private string DetectSentiment(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return "neutral";
 
             var sentimentMap = new Dictionary<string, string[]>
             {
-                ["worried"] = new[] { "worried", "concerned", "scared", "nervous", "anxious" },
-                ["positive"] = new[] { "happy", "excited", "great", "good", "awesome" },
-                ["negative"] = new[] { "angry", "frustrated", "upset", "mad", "annoyed" },
-                ["curious"] = new[] { "what", "how", "explain", "?", "tell me", "why" }
+                ["worried"] = new[] { "worried", "concerned", "scared" },
+                ["positive"] = new[] { "happy", "excited", "great" },
+                ["negative"] = new[] { "angry", "frustrated", "upset" },
+                ["curious"] = new[] { "what", "how", "explain", "?", "why" }
             };
 
             string lowerInput = input.ToLower();
@@ -206,9 +234,8 @@ namespace cybersecurity_chatbot_csharp
             {
                 if (input.ToLower().Contains(topic.ToLower()))
                 {
-                    _memory.RememberInterest(topic);
+                    _memory.RememberKeyword(topic);
                     string response = _knowledgeBase.GetResponse(topic);
-
                     DisplayResponse(response);
                     return true;
                 }
@@ -216,61 +243,15 @@ namespace cybersecurity_chatbot_csharp
             return false;
         }
 
-        private string DetermineResponseType(string input, List<string> keywords)
-        {
-            foreach (string keyword in keywords)
-            {
-                string response = _knowledgeBase.GetResponse(keyword);
-                if (!string.IsNullOrEmpty(response) && _memory.IsCurrentInterest(keyword))
-                {
-                    return "interest";
-                }
-            }
-            return "default";
-        }
-
-        private string GenerateDefaultResponse(string input, string sentiment, List<string> keywords)
-        {
-            var matchedTopics = keywords
-                .Select(k => new { Key = k, Value = _knowledgeBase.GetResponse(k) })
-                .Where(x => !string.IsNullOrEmpty(x.Value))
-                .ToDictionary(x => x.Key, x => x.Value);
-
-            if (matchedTopics.Count > 0)
-            {
-                return string.Join("\n", matchedTopics.Select(t => $"{t.Key.ToUpper()} >> {t.Value}"));
-            }
-            return "I'm not sure about that. Try 'help' for options.";
-        }
-
-        private string GenerateInterestBasedResponse(string input, string sentiment, List<string> keywords)
-        {
-            string baseResponse = keywords
-                .Select(k => _knowledgeBase.GetResponse(k))
-                .FirstOrDefault(r => !string.IsNullOrEmpty(r));
-
-            return _memory.GetInterestResponse(_memory.UserInterest, baseResponse);
-        }
-
-        private string GenerateNameResponse(string input, string sentiment, List<string> keywords)
-        {
-            return _memory.OnNameRecall(_memory.UserName);
-        }
-
         private string GetSentimentResponse(string sentiment)
         {
             switch (sentiment)
             {
-                case "worried":
-                    return "I understand this can be concerning. ";
-                case "positive":
-                    return "Great! I'm glad you're enthusiastic about security! ";
-                case "negative":
-                    return "I'm sorry you're feeling frustrated. Let me help. ";
-                case "curious":
-                    return "That's a great question! ";
-                default:
-                    return "";
+                case "worried": return "I understand this can be concerning. ";
+                case "positive": return "Great! I'm glad you're enthusiastic! ";
+                case "negative": return "I'm sorry you're feeling frustrated. ";
+                case "curious": return "That's a great question! ";
+                default: return "";
             }
         }
     }
