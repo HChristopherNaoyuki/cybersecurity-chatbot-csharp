@@ -11,18 +11,6 @@ namespace cybersecurity_chatbot_csharp
     /// <summary>
     /// Handles all user interface components and multimedia presentation.
     /// Implements the Facade pattern to simplify complex UI operations.
-    /// 
-    /// Key Responsibilities:
-    /// - Audio playback
-    /// - ASCII art generation
-    /// - Console formatting
-    /// - User input collection
-    /// - Text display with effects
-    /// 
-    /// Design Patterns:
-    /// - Facade: Simplifies complex UI operations
-    /// - Builder: Constructs ASCII art output
-    /// - Decorator: Adds visual effects to text
     /// </summary>
     public class UserInterface
     {
@@ -30,7 +18,6 @@ namespace cybersecurity_chatbot_csharp
 
         /// <summary>
         /// Plays the welcome audio greeting in WAV format.
-        /// Implements the Dispose pattern for resource management.
         /// </summary>
         public void PlayVoiceGreeting()
         {
@@ -59,7 +46,6 @@ namespace cybersecurity_chatbot_csharp
 
         /// <summary>
         /// Generates and displays ASCII art from an image file.
-        /// Implements the Builder pattern for ASCII art construction.
         /// </summary>
         public void DisplayAsciiArt()
         {
@@ -86,7 +72,6 @@ namespace cybersecurity_chatbot_csharp
 
         /// <summary>
         /// Collects and validates the user's name through console input.
-        /// Implements the Retry pattern for input validation.
         /// </summary>
         public string GetUserName()
         {
@@ -173,6 +158,9 @@ namespace cybersecurity_chatbot_csharp
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Gets the full path for a resource file
+        /// </summary>
         private string GetResourcePath(string folder, string fileName)
         {
             string basePath = AppDomain.CurrentDomain.BaseDirectory;
@@ -180,6 +168,9 @@ namespace cybersecurity_chatbot_csharp
             return Path.GetFullPath(Path.Combine(basePath, relativePath));
         }
 
+        /// <summary>
+        /// Converts an image to ASCII art
+        /// </summary>
         private string ConvertImageToAscii(string imagePath, int width, int height)
         {
             using (Bitmap bitmap = new Bitmap(imagePath))
@@ -203,6 +194,9 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Maps a grayscale value to an ASCII character
+        /// </summary>
         private char MapGrayValueToAscii(int grayValue)
         {
             grayValue = Math.Min(Math.Max(grayValue, 0), 255);
