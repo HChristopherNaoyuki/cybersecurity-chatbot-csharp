@@ -108,11 +108,14 @@ namespace cybersecurity_chatbot_csharp
 
         private void DisplayHelp()
         {
+            _ui.TypeText("Chatbot: ", 20);
+            Console.ForegroundColor = ConsoleColor.Magenta;
             _ui.TypeText("I can help with these cybersecurity topics:", 20);
             foreach (string topic in _knowledgeBase.GetAllTopics())
             {
                 Console.WriteLine($"- {topic}");
             }
+            Console.ResetColor();
         }
 
         /// <summary>

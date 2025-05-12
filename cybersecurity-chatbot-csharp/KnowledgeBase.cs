@@ -175,8 +175,8 @@ namespace cybersecurity_chatbot_csharp
             string[] wordsToIgnore = new string[]
             {
                 "tell", "me", "about", "a", "the", "an",
-                "how", "do", "you", "explain", "your", "can",
-                "what", "is", "are", "does", "could", "would",
+                "do", "explain", "can",
+                "what", "is", "does", "could", "would",
                 "should", "will", "please", "thanks", "thank"
             };
 
