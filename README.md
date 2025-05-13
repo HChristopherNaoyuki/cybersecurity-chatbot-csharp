@@ -2,33 +2,28 @@
 
 ## Overview
 
-A console-based chatbot designed to educate users about cybersecurity best practices. This application provides interactive guidance on topics like:
-
-- Password security
-- Phishing detection
-- Privacy protection
-- Secure browsing
-- Two-factor authentication
+A console-based chatbot designed to educate users about cybersecurity best practices through interactive conversations.
 
 ## Features
 
 ### Core Functionality
-- Interactive Q&A about cybersecurity topics
-- Personalized responses using your name
-- ASCII art welcome screen
-- Voice greeting on startup
+- **Interactive Conversations**: Natural dialogue flow with personalized responses
+- **Cybersecurity Education**: Covers topics like passwords, phishing, VPNs, and privacy
+- **User Memory**: Remembers user details and conversation history
+- **Sentiment Analysis**: Adapts responses based on detected user emotions
 
-### Advanced Features
-- Sentiment-aware responses
-- Conversation memory (remembers your interests)
-- Contextual follow-ups
-- Multiple response variations
+### Technical Highlights
+- **Delegate-Based Architecture**: Clean separation of concerns using C# delegates
+- **Modular Design**: Easily extensible components
+- **Persistent Memory**: Saves conversation history between sessions
+- **Error Resilient**: Graceful handling of edge cases
 
 ## Getting Started
 
 ### Prerequisites
-- [.NET 8 SDK](https://dotnet.microsoft.com/download)
-- Windows machine (for voice functionality)
+- .NET 6.0 SDK or later
+- Windows OS (for voice greeting functionality)
+- Text-to-speech libraries (optional)
 
 ### Installation
 1. Clone the repository:
@@ -39,55 +34,47 @@ A console-based chatbot designed to educate users about cybersecurity best pract
    ```bash
    cd cybersecurity-chatbot/src
    ```
+3. Build the solution:
+   ```bash
+   dotnet build
+   ```
 
-### Running the Application
+### Usage
+Run the chatbot:
 ```bash
-dotnet run
+dotnet run --project cybersecurity_chatbot_csharp.csproj
 ```
 
-## Usage Examples
+**Basic Commands:**
+- `help` - Show available topics
+- `exit` - Quit the chatbot
+- "What's my name?" - Recall stored username
 
-**Basic interaction:**
-```
-User: How can I create a strong password?
-Chatbot: Strong passwords should be at least 12 characters long...
-```
+## Project Structure
 
-**Interest-based follow-up:**
 ```
-User: I'm interested in privacy
-Chatbot: I'll remember you're interested in privacy...
-[Later in conversation]
-Chatbot: Since you're interested in privacy, you should review...
+/src
+│
+├── ChatBot.cs              - Main orchestrator class
+├── ConversationManager.cs  - Handles conversation logic
+├── KnowledgeBase.cs        - Contains cybersecurity responses
+├── MemoryManager.cs        - Manages user memory
+├── Program.cs              - Entry point
+└── UserInterface.cs        - Handles all UI components
 ```
 
 ## Development
 
-### Project Structure
-```
-/src
-  /CybersecurityChatbot      # Main application
-  /CybersecurityChatbot.Tests # Unit tests
-```
+### Key Design Patterns
+- **Facade Pattern**: Simplified UI operations via `UserInterface`
+- **Strategy Pattern**: Delegate-based implementations for flexible behaviors
+- **Observer Pattern**: Event-driven memory updates
 
-### Building and Testing
-Run all tests:
-```bash
-dotnet test
-```
-
-### CI Pipeline
-The GitHub Actions workflow automatically runs tests on:
-- Push to main/master
-- Pull requests to main/master
-
-## Contributing
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+### Continuous Integration
+The project includes GitHub Actions for:
+- Automated builds
+- Code quality checks
+- Test execution
 
 ## License
 
