@@ -7,28 +7,36 @@ namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
     /// Manages persistent keyword memory and contextual responses
+    /// 
+    /// Features:
+    /// - Keyword tracking with counts
+    /// - Contextual response generation
+    /// - Persistent storage to file
+    /// - Personalized name recall
     /// </summary>
     public class MemoryManager
     {
+        // Constants
         private const string StorageFileName = "user_keywords.txt";
-        private string _userName;
-        private Dictionary<string, int> _keywordCounts = new Dictionary<string, int>();
 
+        // Delegate type for contextual response generation
+        public delegate string ContextualResponseGenerator(string keyword, string baseResponse, int count);
         public delegate string NameRecallResponse(string name);
 
-        public MemoryManager()
-        {
-            _userName = null;
-            InitializeStorage();
-            LoadPersistedData();
-        }
+        // Fields
+        private string _userName;
+        private Dictionary<string, int> _keywordCounts = new Dictionary<string, int>();
+        private readonly ContextualResponseGenerator _contextualResponseGenerator;
 
         /// <summary>
-        /// Personalized name recall response
+        /// Personalized name recall response delegate
         /// </summary>
         public NameRecallResponse OnNameRecall = (name) =>
             $"Your name is {name}. Have you forgotten?";
 
+        /// <summary>
+        /// Gets or sets the current user name with validation
+        /// </summary>
         public string UserName
         {
             get => _userName ?? throw new InvalidOperationException("Username not set");
@@ -38,6 +46,56 @@ namespace cybersecurity_chatbot_csharp
                     throw new ArgumentException("Username cannot be empty");
                 _userName = value.Trim();
             }
+        }
+
+        /// <summary>
+        /// Initializes a new MemoryManager instance
+        /// </summary>
+        public MemoryManager()
+        {
+            _userName = null;
+
+            // Initialize contextual response generator with lambda
+            _contextualResponseGenerator = (keyword, baseResponse, count) =>
+            {
+                var contextualPrefixes = new Dictionary<int, string[]>
+                {
+                    [2] = new[]
+                    {
+                        $"Since we discussed {keyword} before, ",
+                        $"About {keyword} again, ",
+                        $"Regarding {keyword}, "
+                    },
+                    [3] = new[]
+                    {
+                        $"As we've talked about {keyword} several times, ",
+                        $"You seem interested in {keyword}, ",
+                        $"Since you keep asking about {keyword}, "
+                    },
+                    [4] = new[]
+                    {
+                        $"You're really curious about {keyword}, ",
+                        $"I notice you frequently ask about {keyword}, ",
+                        $"You've asked about {keyword} {count} times now, "
+                    }
+                };
+
+                // Find the closest matching tier
+                int tier = contextualPrefixes.Keys
+                    .Where(k => k <= count)
+                    .DefaultIfEmpty(0)
+                    .Max();
+
+                if (tier > 0 && contextualPrefixes.TryGetValue(tier, out var prefixes))
+                {
+                    return prefixes[new Random().Next(prefixes.Length)] + baseResponse;
+                }
+
+                return baseResponse;
+            };
+
+            InitializeStorage();
+            LoadPersistedData();
         }
 
         /// <summary>
@@ -78,47 +136,20 @@ namespace cybersecurity_chatbot_csharp
         /// </summary>
         public string GetContextualResponse(string keyword, string baseResponse, int count)
         {
-            var contextualPrefixes = new Dictionary<int, string[]>
-            {
-                [2] = new[]
-                {
-                    $"Since we discussed {keyword} before, ",
-                    $"About {keyword} again, ",
-                    $"Regarding {keyword}, "
-                },
-                [3] = new[]
-                {
-                    $"As we've talked about {keyword} several times, ",
-                    $"You seem interested in {keyword}, ",
-                    $"Since you keep asking about {keyword}, "
-                },
-                [4] = new[]
-                {
-                    $"You're really curious about {keyword}, ",
-                    $"I notice you frequently ask about {keyword}, ",
-                    $"You've asked about {keyword} {count} times now, "
-                }
-            };
-
-            // Find the closest matching tier
-            int tier = contextualPrefixes.Keys
-                .Where(k => k <= count)
-                .DefaultIfEmpty(0)
-                .Max();
-
-            if (tier > 0 && contextualPrefixes.TryGetValue(tier, out var prefixes))
-            {
-                return prefixes[new Random().Next(prefixes.Length)] + baseResponse;
-            }
-
-            return baseResponse;
+            return _contextualResponseGenerator(keyword, baseResponse, count);
         }
 
+        /// <summary>
+        /// Normalizes keywords to lowercase and trims whitespace
+        /// </summary>
         private string NormalizeKeyword(string keyword)
         {
             return keyword.ToLower().Trim();
         }
 
+        /// <summary>
+        /// Initializes the storage file if it doesn't exist
+        /// </summary>
         private void InitializeStorage()
         {
             try
@@ -134,6 +165,9 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Loads persisted keyword data from file
+        /// </summary>
         private void LoadPersistedData()
         {
             try
@@ -155,6 +189,9 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Saves current keyword counts to file
+        /// </summary>
         private void PersistData()
         {
             try
