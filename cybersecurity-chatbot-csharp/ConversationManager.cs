@@ -10,30 +10,107 @@ namespace cybersecurity_chatbot_csharp
     /// - Persistent keyword tracking
     /// - Contextual conversation flow
     /// - Natural language processing
+    /// 
+    /// Uses delegates for command detection and response generation
     /// </summary>
     public class ConversationManager
     {
+        // Delegate type definitions
+        public delegate bool CommandDetector(string input);
+        public delegate string ResponseGenerator(string keyword, string sentiment, int count);
+        public delegate string SentimentDetector(string input);
+        public delegate List<string> KeywordExtractor(string input);
+
         // Dependencies
         private readonly KnowledgeBase _knowledgeBase;
         private readonly MemoryManager _memory;
         private readonly UserInterface _ui;
 
-        // Command detection predicates
-        private readonly Func<string, bool> _isExitCommand = input =>
+        // Command detection delegates (lambda expressions)
+        private readonly CommandDetector _isExitCommand = input =>
             new[] { "exit", "quit", "bye" }.Contains(input, StringComparer.OrdinalIgnoreCase);
 
-        private readonly Func<string, bool> _isHelpCommand = input =>
+        private readonly CommandDetector _isHelpCommand = input =>
             new[] { "help", "options", "topics" }.Contains(input, StringComparer.OrdinalIgnoreCase);
 
-        private readonly Func<string, bool> _isNameQuery = input =>
+        private readonly CommandDetector _isNameQuery = input =>
             input.IndexOf("what is my name", StringComparison.OrdinalIgnoreCase) >= 0 ||
             input.IndexOf("who am i", StringComparison.OrdinalIgnoreCase) >= 0;
 
+        // Response generation delegate
+        private readonly ResponseGenerator _keywordResponseGenerator;
+
+        // Sentiment detection delegate
+        private readonly SentimentDetector _detectSentiment;
+
+        // Keyword extraction delegate
+        private readonly KeywordExtractor _extractKeywords;
+
+        /// <summary>
+        /// Initializes a new ConversationManager with dependencies
+        /// </summary>
         public ConversationManager(KnowledgeBase knowledgeBase, MemoryManager memory, UserInterface ui)
         {
             _knowledgeBase = knowledgeBase ?? throw new ArgumentNullException(nameof(knowledgeBase));
             _memory = memory ?? throw new ArgumentNullException(nameof(memory));
             _ui = ui ?? throw new ArgumentNullException(nameof(ui));
+
+            // Initialize response generator with lambda
+            _keywordResponseGenerator = (keyword, sentiment, count) =>
+            {
+                string response = _knowledgeBase.GetResponse(keyword);
+                if (string.IsNullOrEmpty(response)) return null;
+
+                // Add contextual prefix if discussed before
+                if (count > 1)
+                {
+                    response = _memory.GetContextualResponse(keyword, response, count);
+                }
+
+                // Add sentiment prefix if needed
+                if (sentiment != "neutral")
+                {
+                    response = $"{GetSentimentResponse(sentiment)}{response}";
+                }
+
+                return $"{keyword.ToUpper()}: {response}";
+            };
+
+            // Initialize sentiment detector with lambda
+            _detectSentiment = input =>
+            {
+                if (string.IsNullOrWhiteSpace(input)) return "neutral";
+
+                var sentimentMap = new Dictionary<string, string[]>
+                {
+                    ["worried"] = new[] { "worried", "concerned", "scared" },
+                    ["positive"] = new[] { "happy", "excited", "great" },
+                    ["negative"] = new[] { "angry", "frustrated", "upset" },
+                    ["curious"] = new[] { "what", "how", "explain", "?", "why" }
+                };
+
+                string lowerInput = input.ToLower();
+                foreach (var sentiment in sentimentMap)
+                {
+                    if (sentiment.Value.Any(keyword => lowerInput.Contains(keyword)))
+                    {
+                        return sentiment.Key;
+                    }
+                }
+                return "neutral";
+            };
+
+            // Initialize keyword extractor with lambda
+            _extractKeywords = input =>
+            {
+                if (string.IsNullOrWhiteSpace(input)) return new List<string>();
+
+                return input.Split(new[] { ' ', ',', '.', '?', '!' },
+                          StringSplitOptions.RemoveEmptyEntries)
+                      .Select(word => word.ToLower().Trim())
+                      .Where(word => word.Length > 2 && !_knowledgeBase.ShouldIgnoreWord(word))
+                      .ToList();
+            };
         }
 
         /// <summary>
@@ -51,7 +128,7 @@ namespace cybersecurity_chatbot_csharp
             catch (Exception ex)
             {
                 _ui.DisplayError($"Conversation error: {ex.Message}");
-                StartChat();
+                StartChat(); // Restart conversation on error
             }
         }
 
@@ -68,6 +145,7 @@ namespace cybersecurity_chatbot_csharp
                 return;
             }
 
+            // Check for special commands using delegate predicates
             if (_isExitCommand(input))
             {
                 HandleExit();
@@ -123,14 +201,14 @@ namespace cybersecurity_chatbot_csharp
         /// </summary>
         private void ProcessNaturalLanguage(string input)
         {
-            string sentiment = DetectSentiment(input);
-            List<string> keywords = ExtractKeywords(input);
+            // Use sentiment detection delegate
+            string sentiment = _detectSentiment(input);
+
+            // Use keyword extraction delegate
+            List<string> keywords = _extractKeywords(input);
 
             // Save all keywords to memory
-            foreach (string keyword in keywords)
-            {
-                _memory.RememberKeyword(keyword);
-            }
+            keywords.ForEach(keyword => _memory.RememberKeyword(keyword));
 
             if (TryHandleInterestExpression(input, keywords)) return;
 
@@ -146,7 +224,10 @@ namespace cybersecurity_chatbot_csharp
 
             foreach (string keyword in keywords.Distinct())
             {
-                string response = GetKeywordResponse(keyword, sentiment);
+                int count = _memory.GetKeywordCount(keyword);
+                // Use response generator delegate
+                string response = _keywordResponseGenerator(keyword, sentiment, count);
+
                 if (!string.IsNullOrEmpty(response))
                 {
                     anyResponses = true;
@@ -158,75 +239,6 @@ namespace cybersecurity_chatbot_csharp
             {
                 DisplayResponse("I'm not sure about that. Try 'help' for options.");
             }
-        }
-
-        /// <summary>
-        /// Generates a contextual response for a single keyword
-        /// </summary>
-        private string GetKeywordResponse(string keyword, string sentiment)
-        {
-            string response = _knowledgeBase.GetResponse(keyword);
-            if (string.IsNullOrEmpty(response)) return null;
-
-            // Get discussion count for contextual response
-            int discussionCount = _memory.GetKeywordCount(keyword);
-
-            // Add contextual prefix if discussed before
-            if (discussionCount > 1)
-            {
-                response = _memory.GetContextualResponse(keyword, response, discussionCount);
-            }
-
-            // Add sentiment prefix if needed
-            if (sentiment != "neutral")
-            {
-                response = $"{GetSentimentResponse(sentiment)}{response}";
-            }
-
-            return $"{keyword.ToUpper()}: {response}";
-        }
-
-        private void DisplayResponse(string response)
-        {
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write("ChatBot: ");
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            _ui.TypeText(response, 20);
-            Console.ResetColor();
-        }
-
-        private string DetectSentiment(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return "neutral";
-
-            var sentimentMap = new Dictionary<string, string[]>
-            {
-                ["worried"] = new[] { "worried", "concerned", "scared" },
-                ["positive"] = new[] { "happy", "excited", "great" },
-                ["negative"] = new[] { "angry", "frustrated", "upset" },
-                ["curious"] = new[] { "what", "how", "explain", "?", "why" }
-            };
-
-            string lowerInput = input.ToLower();
-            foreach (var sentiment in sentimentMap)
-            {
-                if (sentiment.Value.Any(keyword => lowerInput.Contains(keyword)))
-                {
-                    return sentiment.Key;
-                }
-            }
-            return "neutral";
-        }
-
-        private List<string> ExtractKeywords(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return new List<string>();
-
-            return input.Split(new[] { ' ', ',', '.', '?', '!' },
-                      StringSplitOptions.RemoveEmptyEntries)
-                  .Select(word => word.ToLower().Trim())
-                  .Where(word => word.Length > 2 && !_knowledgeBase.ShouldIgnoreWord(word))
-                  .ToList();
         }
 
         private bool TryHandleInterestExpression(string input, List<string> keywords)
@@ -244,6 +256,15 @@ namespace cybersecurity_chatbot_csharp
                 }
             }
             return false;
+        }
+
+        private void DisplayResponse(string response)
+        {
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("ChatBot: ");
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            _ui.TypeText(response, 20);
+            Console.ResetColor();
         }
 
         private string GetSentimentResponse(string sentiment)
