@@ -1,5 +1,10 @@
 ﻿using System;
 
+/**
+ * AUTHOR: NAOYUKI CHRISTOPHER H.
+ * GITHUB LINK: https://github.com/HChristopherNaoyuki/cybersecurity-chatbot-csharp.git
+ */
+
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
