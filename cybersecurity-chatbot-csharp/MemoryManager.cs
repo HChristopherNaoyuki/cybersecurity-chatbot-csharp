@@ -38,13 +38,13 @@ namespace cybersecurity_chatbot_csharp
         /// Delegate for personalized name recall responses
         /// </summary>
         public NameRecallResponse OnNameRecall = (name) =>
-            $"Your name is {name}. Have you forgotten?";
+            $"Chatbot: Your name is {name}. Have you forgotten?";
 
         /// <summary>
         /// Delegate for frequent question responses
         /// </summary>
         public FrequentQuestionResponse OnFrequentQuestion = (keyword) =>
-            $"Your most frequently asked question (FAQ) is {keyword}.";
+            $"Chatbot: Your most frequently asked question (FAQ) is {keyword}.";
 
         /// <summary>
         /// Gets or sets the current user name with validation
