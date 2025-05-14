@@ -5,13 +5,19 @@ using System.Linq;
 namespace cybersecurity_chatbot_csharp
 {
     /// <summary>
-    /// Handles all conversation logic with:
-    /// - Multi-keyword response generation
-    /// - Persistent keyword tracking
-    /// - Contextual conversation flow
-    /// - Natural language processing
+    /// Handles all conversation logic and user interaction flow
     /// 
-    /// Uses delegates for command detection and response generation
+    /// Responsibilities:
+    /// - Processes user input through NLP pipeline
+    /// - Detects commands and special queries
+    /// - Manages conversation state and flow
+    /// - Coordinates with KnowledgeBase and MemoryManager
+    /// - Generates appropriate responses
+    /// 
+    /// Design Patterns:
+    /// - Chain of Responsibility for command detection
+    /// - Strategy pattern for response generation
+    /// - Observer pattern for keyword tracking
     /// </summary>
     public class ConversationManager
     {
@@ -37,6 +43,13 @@ namespace cybersecurity_chatbot_csharp
             input.IndexOf("what is my name", StringComparison.OrdinalIgnoreCase) >= 0 ||
             input.IndexOf("who am i", StringComparison.OrdinalIgnoreCase) >= 0;
 
+        private readonly CommandDetector _isFrequentQuestionQuery = input =>
+            input.IndexOf("most frequently asked", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            input.IndexOf("faq", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            input.IndexOf("most common question", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            input.IndexOf("what do i ask most", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            input.IndexOf("frequent questions", StringComparison.OrdinalIgnoreCase) >= 0;
+
         // Response generation delegate
         private readonly ResponseGenerator _keywordResponseGenerator;
 
@@ -49,6 +62,10 @@ namespace cybersecurity_chatbot_csharp
         /// <summary>
         /// Initializes a new ConversationManager with dependencies
         /// </summary>
+        /// <param name="knowledgeBase">KnowledgeBase instance</param>
+        /// <param name="memory">MemoryManager instance</param>
+        /// <param name="ui">UserInterface instance</param>
+        /// <exception cref="ArgumentNullException">Thrown if any dependency is null</exception>
         public ConversationManager(KnowledgeBase knowledgeBase, MemoryManager memory, UserInterface ui)
         {
             _knowledgeBase = knowledgeBase ?? throw new ArgumentNullException(nameof(knowledgeBase));
@@ -164,12 +181,19 @@ namespace cybersecurity_chatbot_csharp
                 return;
             }
 
+            if (_isFrequentQuestionQuery(input))
+            {
+                _ui.TypeText(_memory.GetFrequentQuestionResponse(), 20);
+                return;
+            }
+
             ProcessNaturalLanguage(input);
         }
 
         /// <summary>
         /// Gets formatted user input with username prefix
         /// </summary>
+        /// <returns>Trimmed user input string</returns>
         private string GetUserInput()
         {
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -178,12 +202,18 @@ namespace cybersecurity_chatbot_csharp
             return Console.ReadLine()?.Trim() ?? string.Empty;
         }
 
+        /// <summary>
+        /// Handles exit command with farewell message
+        /// </summary>
         private void HandleExit()
         {
             _ui.TypeText("Stay safe online! Goodbye.", 30);
             Environment.Exit(0);
         }
 
+        /// <summary>
+        /// Displays help information with available topics
+        /// </summary>
         private void DisplayHelp()
         {
             _ui.TypeText("Chatbot: ", 20);
@@ -199,6 +229,7 @@ namespace cybersecurity_chatbot_csharp
         /// <summary>
         /// Processes natural language input through full NLP pipeline
         /// </summary>
+        /// <param name="input">Raw user input</param>
         private void ProcessNaturalLanguage(string input)
         {
             // Use sentiment detection delegate
@@ -218,6 +249,8 @@ namespace cybersecurity_chatbot_csharp
         /// <summary>
         /// Displays individual responses for each recognized keyword
         /// </summary>
+        /// <param name="keywords">List of extracted keywords</param>
+        /// <param name="sentiment">Detected user sentiment</param>
         private void DisplayMultiTopicResponses(List<string> keywords, string sentiment)
         {
             bool anyResponses = false;
@@ -241,6 +274,12 @@ namespace cybersecurity_chatbot_csharp
             }
         }
 
+        /// <summary>
+        /// Handles explicit interest expressions ("I'm interested in...")
+        /// </summary>
+        /// <param name="input">User input</param>
+        /// <param name="keywords">Extracted keywords</param>
+        /// <returns>True if interest was expressed and handled</returns>
         private bool TryHandleInterestExpression(string input, List<string> keywords)
         {
             if (!input.ToLower().Contains("interested in")) return false;
@@ -258,6 +297,10 @@ namespace cybersecurity_chatbot_csharp
             return false;
         }
 
+        /// <summary>
+        /// Displays a formatted response to the user
+        /// </summary>
+        /// <param name="response">Response text to display</param>
         private void DisplayResponse(string response)
         {
             Console.ForegroundColor = ConsoleColor.White;
@@ -267,6 +310,11 @@ namespace cybersecurity_chatbot_csharp
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Gets an appropriate sentiment-based prefix for responses
+        /// </summary>
+        /// <param name="sentiment">Detected sentiment</param>
+        /// <returns>Sentiment-specific prefix string</returns>
         private string GetSentimentResponse(string sentiment)
         {
             switch (sentiment)

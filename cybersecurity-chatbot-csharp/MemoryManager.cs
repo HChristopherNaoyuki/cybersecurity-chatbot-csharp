@@ -8,20 +8,26 @@ namespace cybersecurity_chatbot_csharp
     /// <summary>
     /// Manages persistent keyword memory and contextual responses
     /// 
-    /// Features:
-    /// - Keyword tracking with counts
-    /// - Contextual response generation
-    /// - Persistent storage to file
-    /// - Personalized name recall
+    /// Responsibilities:
+    /// - Tracks keyword usage frequency with counts
+    /// - Generates contextual responses based on discussion history
+    /// - Persists keyword data to file for session-to-session memory
+    /// - Handles personalized name recall
+    /// - Identifies most frequently asked questions
+    /// 
+    /// Design Patterns:
+    /// - Singleton pattern for memory persistence
+    /// - Delegate pattern for response generation
     /// </summary>
     public class MemoryManager
     {
         // Constants
         private const string StorageFileName = "user_keywords.txt";
 
-        // Delegate type for contextual response generation
+        // Delegate type definitions for response generation
         public delegate string ContextualResponseGenerator(string keyword, string baseResponse, int count);
         public delegate string NameRecallResponse(string name);
+        public delegate string FrequentQuestionResponse(string keyword);
 
         // Fields
         private string _userName;
@@ -29,14 +35,21 @@ namespace cybersecurity_chatbot_csharp
         private readonly ContextualResponseGenerator _contextualResponseGenerator;
 
         /// <summary>
-        /// Personalized name recall response delegate
+        /// Delegate for personalized name recall responses
         /// </summary>
         public NameRecallResponse OnNameRecall = (name) =>
             $"Your name is {name}. Have you forgotten?";
 
         /// <summary>
+        /// Delegate for frequent question responses
+        /// </summary>
+        public FrequentQuestionResponse OnFrequentQuestion = (keyword) =>
+            $"Your most frequently asked question (FAQ) is {keyword}.";
+
+        /// <summary>
         /// Gets or sets the current user name with validation
         /// </summary>
+        /// <exception cref="ArgumentException">Thrown when username is empty or whitespace</exception>
         public string UserName
         {
             get => _userName ?? throw new InvalidOperationException("Username not set");
@@ -49,7 +62,25 @@ namespace cybersecurity_chatbot_csharp
         }
 
         /// <summary>
+        /// Gets the most frequently asked keyword based on tracked counts
+        /// </summary>
+        /// <returns>The keyword with highest count, or null if no keywords tracked</returns>
+        public string MostFrequentKeyword
+        {
+            get
+            {
+                if (_keywordCounts.Count == 0) return null;
+
+                var maxPair = _keywordCounts.Aggregate((l, r) => l.Value > r.Value ? l : r);
+                return maxPair.Key;
+            }
+        }
+
+        /// <summary>
         /// Initializes a new MemoryManager instance
+        /// - Sets up storage file
+        /// - Loads persisted data
+        /// - Initializes response generators
         /// </summary>
         public MemoryManager()
         {
@@ -101,6 +132,7 @@ namespace cybersecurity_chatbot_csharp
         /// <summary>
         /// Records a keyword and increments its count
         /// </summary>
+        /// <param name="keyword">The keyword to remember</param>
         public void RememberKeyword(string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword)) return;
@@ -125,6 +157,8 @@ namespace cybersecurity_chatbot_csharp
         /// <summary>
         /// Gets discussion count for a keyword
         /// </summary>
+        /// <param name="keyword">The keyword to check</param>
+        /// <returns>Number of times keyword was discussed</returns>
         public int GetKeywordCount(string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword)) return 0;
@@ -134,14 +168,31 @@ namespace cybersecurity_chatbot_csharp
         /// <summary>
         /// Generates contextual response based on keyword history
         /// </summary>
+        /// <param name="keyword">Current keyword</param>
+        /// <param name="baseResponse">Base response without context</param>
+        /// <param name="count">Current discussion count</param>
+        /// <returns>Contextualized response string</returns>
         public string GetContextualResponse(string keyword, string baseResponse, int count)
         {
             return _contextualResponseGenerator(keyword, baseResponse, count);
         }
 
         /// <summary>
+        /// Gets the response for the most frequent question
+        /// </summary>
+        /// <returns>Formatted response about most frequent question</returns>
+        public string GetFrequentQuestionResponse()
+        {
+            string keyword = MostFrequentKeyword;
+            return keyword != null ? OnFrequentQuestion(keyword) :
+                "You haven't asked enough questions yet to determine a frequent topic.";
+        }
+
+        /// <summary>
         /// Normalizes keywords to lowercase and trims whitespace
         /// </summary>
+        /// <param name="keyword">Raw keyword</param>
+        /// <returns>Normalized keyword</returns>
         private string NormalizeKeyword(string keyword)
         {
             return keyword.ToLower().Trim();
