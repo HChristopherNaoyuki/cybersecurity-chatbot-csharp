@@ -1,83 +1,110 @@
-# Cybersecurity Awareness Chatbot
+# Cybersecurity Awareness Chatbot (C#)
 
-## Overview
+This repository contains a C# console-based chatbot application that provides interactive cybersecurity education. The chatbot engages users in conversations about key topics such as password safety, phishing awareness, VPN usage, and online privacy. It offers personalized responses, remembers user preferences, and presents information in an accessible and dynamic manner.
 
-A console-based chatbot designed to educate users about cybersecurity best practices through interactive conversations.
+---
+
+## Project Structure
+
+The project is organized into clearly defined directories and files to support maintainability, collaboration, and documentation.
+
+### `.github/workflows`
+
+Contains GitHub Actions workflow files used for automation tasks such as:
+
+- Continuous Integration (CI)
+- Code validation and formatting
+- Automated builds or test runs
+
+These YAML files define how the repository behaves when code is pushed, pull requests are opened, or scheduled events occur.
+
+---
+
+### `GitHub Link`
+
+Includes metadata or supporting documentation pointing to the repository’s live URL on GitHub.
+
+- `github-link-pdf`: A plain pdf with a link to the public GitHub repository. Useful for reference, submissions, or automated systems.
+
+---
+
+### `Presentation`
+
+This directory contains the official presentation materials for the project.
+
+- `presentation.pptx`: A Microsoft PowerPoint file that outlines the chatbot’s goals, system architecture, features, implementation details, and demonstration screenshots. It is intended for academic presentation.
+
+---
+
+### `cybersecurity-chatbot-csharp`
+
+This is the main application source folder containing the C# classes that define the chatbot’s core functionality.
+
+#### Key Components
+
+- **`Program.cs`**  
+  Entry point of the application. It initializes and launches the chatbot by invoking the main logic contained in other classes.
+
+- **`ChatBot.cs`**  
+  Controls the application flow. It handles user input, processes natural language prompts, and coordinates responses from various services including the knowledge base and memory management modules.
+
+- **`KnowledgeBase.cs`**  
+  Manages cybersecurity-related data, including:
+  - Topic-response pairs
+  - Randomized responses for common subjects such as passwords, phishing, and privacy
+  - Filtering out non-essential words from user input to identify core queries
+
+- **`MemoryManager.cs`**  
+  Manages user-specific data such as:
+  - Username
+  - Expressed interests
+  - Stored favorites  
+  Data is persisted locally via file storage so that user preferences are remembered across sessions.
+
+- **`UserInterface.cs`**  
+  Manages all interactions with the user through the console, including:
+  - Text input and validation
+  - Typing animations for messages
+  - Formatted error messages
+  - ASCII image rendering
+  - Audio playback of welcome messages (WAV format)
+
+---
 
 ## Features
 
-### Core Functionality
-- **Interactive Conversations**: Natural dialogue flow with personalized responses
-- **Cybersecurity Education**: Covers topics like passwords, phishing, VPNs, and privacy
-- **User Memory**: Remembers user details and conversation history
-- **Sentiment Analysis**: Adapts responses based on detected user emotions
+- Personalized conversations using stored user data
+- Secure and validated user input handling
+- Dynamic responses with randomized facts
+- ASCII art generation from image assets
+- Audio greeting for improved engagement
+- File-based persistence of user interests and favorites
+- Clear and readable console formatting using ANSI colors
 
-### Technical Highlights
-- **Delegate-Based Architecture**: Clean separation of concerns using C# delegates
-- **Modular Design**: Easily extensible components
-- **Persistent Memory**: Saves conversation history between sessions
-- **Error Resilient**: Graceful handling of edge cases
+---
 
 ## Getting Started
 
 ### Prerequisites
-- .NET 6.0 SDK or later
-- Windows OS (for voice greeting functionality)
-- Text-to-speech libraries (optional)
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/HChristopherNaoyuki/cybersecurity-chatbot-csharp.git
-   ```
-2. Navigate to project directory:
-   ```bash
-   cd cybersecurity-chatbot/src
-   ```
-3. Build the solution:
-   ```bash
-   dotnet build
-   ```
+- [.NET SDK](https://dotnet.microsoft.com/download) (version 6.0 or later recommended)
+- A console terminal or IDE that supports C# projects (e.g., Visual Studio, Rider, VS Code)
 
-### Usage
-Run the chatbot:
+### Running the Application
+
+1. Open a terminal in the root of the `cybersecurity-chatbot-csharp` directory.
+2. Build and run the project using the .NET CLI:
+
 ```bash
-dotnet run --project cybersecurity_chatbot_csharp.csproj
+dotnet run
 ```
 
-**Basic Commands:**
-- `help` - Show available topics
-- `exit` - Quit the chatbot
-- "What's my name?" - Recall stored username
+3. Follow the console prompts to begin interacting with the chatbot.
 
-## Project Structure
-
-```
-/src
-│
-├── ChatBot.cs              - Main orchestrator class
-├── ConversationManager.cs  - Handles conversation logic
-├── KnowledgeBase.cs        - Contains cybersecurity responses
-├── MemoryManager.cs        - Manages user memory
-├── Program.cs              - Entry point
-└── UserInterface.cs        - Handles all UI components
-```
-
-## Development
-
-### Key Design Patterns
-- **Facade Pattern**: Simplified UI operations via `UserInterface`
-- **Strategy Pattern**: Delegate-based implementations for flexible behaviors
-- **Observer Pattern**: Event-driven memory updates
-
-### Continuous Integration
-The project includes GitHub Actions for:
-- Automated builds
-- Code quality checks
-- Test execution
+---
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and distribute this software in accordance with the license terms. Please include the original copyright and license.
 
 ---
